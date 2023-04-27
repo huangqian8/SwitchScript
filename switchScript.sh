@@ -75,8 +75,8 @@ else
     mv Lockpick_RCM.bin ./bootloader/payloads
 fi
 
-### Fetch latest TegraExplorer.bin form https://github.com/suchmememanyskill/TegraExplorer/releases
-curl -sL https://api.github.com/repos/suchmememanyskill/TegraExplorer/releases/latest \
+### Fetch latest TegraExplorer.bin form https://github.com/zdm65477730/TegraExplorer/releases
+curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o TegraExplorer.bin
 if [ $? -ne 0 ]; then
@@ -143,6 +143,18 @@ else
     mv DBI.nro ./switch/DBI
 fi
 
+### Fetch lastest Awoo Installer from https://github.com/dragonflylee/Awoo-Installer/releases/latest
+curl -sL https://api.github.com/repos/dragonflylee/Awoo-Installer/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o Awoo-Installer.zip
+if [ $? -ne 0 ]; then
+    echo "Awoo Installer download\033[31m failed\033[0m."
+else
+    echo "Awoo Installer download\033[32m success\033[0m."
+    unzip -oq Awoo-Installer.zip
+    rm Awoo-Installer.zip
+fi
+
 ### Fetch lastest Hekate-toolbox from https://github.com/WerWolv/Hekate-Toolbox/releases/latest
 curl -sL https://api.github.com/repos/WerWolv/Hekate-Toolbox/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
@@ -197,6 +209,18 @@ if [ $? -ne 0 ]; then
 else
     echo "tencent-switcher-gui download\033[32m success\033[0m."
     mv tencent-switcher-gui.nro ./switch
+fi
+
+### Fetch lastest Breeze from https://github.com/tomvita/Breeze-Beta/releases/latest
+curl -sL https://api.github.com/repos/tomvita/Breeze-Beta/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o Breeze.zip
+if [ $? -ne 0 ]; then
+    echo "Breeze download\033[31m failed\033[0m."
+else
+    echo "Breeze download\033[32m success\033[0m."
+    unzip -oq Breeze.zip
+    rm Breeze.zip
 fi
 
 ### Fetch lastest systemPatches from https://github.com/exelix11/theme-patches
@@ -392,27 +416,44 @@ else
     echo "Writing system_settings.ini in ./atmosphere/config\033[32m success\033[0m."
 fi
 
-### Fetch lastest Tesla3 from https://github.com/Yuanbanba/Tesla3/releases/latest
-curl -sL https://api.github.com/repos/Yuanbanba/Tesla3/releases/latest \
+### Fetch lastest Tesla3 from https://github.com/laila509/Tesla-plugins/releases/latest
+curl -sL https://api.github.com/repos/laila509/Tesla-plugins/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o tesla.rar
+  | xargs -I {} curl -sL {} -o tesla.zip
 if [ $? -ne 0 ]; then
     echo "tesla download\033[31m failed\033[0m."
 else
     echo "tesla download\033[32m success\033[0m."
-    mkdir tesla
-    unrar x tesla.rar ./tesla
-    rm tesla.rar
-    rm tesla/特斯拉说明.txt
-    rm tesla/工具箱启动插件.jpg
-    rm tesla/比较两个特斯拉插件包.jpg
-    rm -rf tesla/switch/DeepSea-Toolbox
-    rm -rf tesla/config/fastCFWSwitch/
-    rm -rf tesla/switch/.overlays/fastcfwswitch.ovl
-    sed -i "s/L+DDOWN/L+Zl+R/g" tesla/config/tesla/config.ini
-    cp -rf tesla/* .
-    rm -rf tesla
+    unzip -oq tesla.zip
+    rm tesla.zip
+    rm 大气层Tesla终极版插件包.txt
+    rm -rf switch/DeepSea-Toolbox
+    #rm -rf config/fastCFWSwitch/
+    #rm -rf switch/.overlays/fastcfwswitch.ovl
+    mv switch/edizon/profile.zip switch/EdiZon
+    rm -rf switch/edizon
+    sed -i "s/L+DDOWN/L+Zl+R/g" config/tesla/config.ini
 fi
+
+### Fetch Chinese lang
+mkdir -p switch/.overlays/lang/fastCFWswitch
+curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hans.json -o switch/.overlays/lang/fastCFWswitch/zh-Hans.json
+curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hant.json -o switch/.overlays/lang/fastCFWswitch/zh-Hant.json
+
+### Fetch lastest Zing from https://github.com/tomvita/Zing/releases/latest
+curl -sL https://api.github.com/repos/tomvita/Zing/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o Zing.ovl
+if [ $? -ne 0 ]; then
+    echo "Zing download\033[31m failed\033[0m."
+else
+    echo "Zing download\033[32m success\033[0m."
+    mv Zing.ovl ./switch/.overlays
+fi
+
+### Delete reboot_to_payload.nro & reboot_to_hekate.nro
+rm switch/reboot_to_payload.nro
+rm switch/reboot_to_hekate.nro
 
 # -------------------------------------------
 
