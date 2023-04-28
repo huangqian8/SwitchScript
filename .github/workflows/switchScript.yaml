@@ -40,6 +40,12 @@ jobs:
         ./$SCRIPT_SH
         zip -rq SwitchSD.zip SwitchSD
 
+    - name: Read description.txt
+      id: description
+      uses: juliangruber/read-file-action@v1
+      with:
+        path: ./description.txt
+
     - name: Create release
       uses: ncipollo/release-action@v1
       with:
@@ -48,8 +54,7 @@ jobs:
         tag: ${{ env.tag_name }}
         commit: main
         token: ${{ secrets.actions_release }}
-        body: |
-          大气层个人整合包
+        body: "${{ steps.description.outputs.content }}"
         artifacts: "SwitchSD.zip"
 
     - name: Remove old Releases

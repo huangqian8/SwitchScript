@@ -11,6 +11,9 @@ set -e
 if [ -d SwitchSD ]; then
   rm -rf SwitchSD
 fi
+if [ -e description.txt ]; then
+  rm -rf description.txt
+fi
 mkdir -p ./SwitchSD/atmosphere/config
 mkdir -p ./SwitchSD/atmosphere/hosts
 mkdir -p ./SwitchSD/switch/DBI
@@ -20,6 +23,9 @@ mkdir -p ./SwitchSD/config/tesla
 cd SwitchSD
 
 ### Fetch latest Hekate + Nyx from https://github.com/CTCaer/hekate/releases/latest
+curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o hekate.zip
@@ -32,6 +38,9 @@ else
 fi
 
 ### Fetch latest atmosphere from https://github.com/Atmosphere-NX/Atmosphere/releases/latest
+curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o atmosphere.zip
@@ -66,6 +75,9 @@ fi
 
 ### Fetch latest Lockpick_RCM.bin from https://github.com/shchmue/Lockpick_RCM/releases/latest
 curl -sL https://api.github.com/repos/shchmue/Lockpick_RCM/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Lockpick_RCM {} >> ../description.txt
+curl -sL https://api.github.com/repos/shchmue/Lockpick_RCM/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Lockpick_RCM.bin
 if [ $? -ne 0 ]; then
@@ -76,6 +88,9 @@ else
 fi
 
 ### Fetch latest TegraExplorer.bin form https://github.com/zdm65477730/TegraExplorer/releases
+curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo TegraExplorer {} >> ../description.txt
 curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o TegraExplorer.bin
@@ -88,6 +103,9 @@ fi
 
 ### Fetch latest CommonProblemResolver.bin form https://github.com/zdm65477730/CommonProblemResolver/releases
 curl -sL https://api.github.com/repos/zdm65477730/CommonProblemResolver/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo CommonProblemResolver {} >> ../description.txt
+curl -sL https://api.github.com/repos/zdm65477730/CommonProblemResolver/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o CommonProblemResolver.bin
 if [ $? -ne 0 ]; then
@@ -98,6 +116,9 @@ else
 fi
 
 ### Fetch lastest Safe_Reboot_Shutdown from https://github.com/dezem/Safe_Reboot_Shutdown/releases/latest
+curl -sL https://api.github.com/repos/dezem/Safe_Reboot_Shutdown/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Safe_Reboot_Shutdown {} >> ../description.txt
 curl -sL https://api.github.com/repos/dezem/Safe_Reboot_Shutdown/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Safe_Reboot_Shutdown.zip
@@ -112,6 +133,9 @@ fi
 
 ### Fetch lastest Switch_90DNS_tester from https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest
 curl -sL https://api.github.com/repos/meganukebmp/Switch_90DNS_tester/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Switch_90DNS_tester {} >> ../description.txt
+curl -sL https://api.github.com/repos/meganukebmp/Switch_90DNS_tester/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Switch_90DNS_tester.nro
 if [ $? -ne 0 ]; then
@@ -122,6 +146,9 @@ else
 fi
 
 ### Fetch lastest Checkpoint from https://github.com/BernardoGiordano/Checkpoint/releases/latest
+curl -sL https://api.github.com/repos/BernardoGiordano/Checkpoint/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Checkpoint {} >> ../description.txt
 curl -sL https://api.github.com/repos/BernardoGiordano/Checkpoint/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Checkpoint.nro
@@ -134,6 +161,9 @@ fi
 
 ### Fetch lastest DBI from https://github.com/rashevskyv/dbi/releases/latest
 curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
+curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
   | jq '.assets' | jq '.[1].browser_download_url' \
   | xargs -I {} curl -sL {} -o DBI.nro
 if [ $? -ne 0 ]; then
@@ -144,6 +174,9 @@ else
 fi
 
 ### Fetch lastest Awoo Installer from https://github.com/dragonflylee/Awoo-Installer/releases/latest
+curl -sL https://api.github.com/repos/dragonflylee/Awoo-Installer/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/dragonflylee/Awoo-Installer/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Awoo-Installer.zip
@@ -157,6 +190,9 @@ fi
 
 ### Fetch lastest Hekate-toolbox from https://github.com/WerWolv/Hekate-Toolbox/releases/latest
 curl -sL https://api.github.com/repos/WerWolv/Hekate-Toolbox/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo HekateToolbox {} >> ../description.txt
+curl -sL https://api.github.com/repos/WerWolv/Hekate-Toolbox/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o HekateToolbox.nro
 if [ $? -ne 0 ]; then
@@ -167,6 +203,9 @@ else
 fi
 
 ### Fetch lastest NX-Activity-Log from https://github.com/zdm65477730/NX-Activity-Log/releases/latest
+curl -sL https://api.github.com/repos/zdm65477730/NX-Activity-Log/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo NX-Activity-Log {} >> ../description.txt
 curl -sL https://api.github.com/repos/zdm65477730/NX-Activity-Log/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o NX-Activity-Log.zip
@@ -180,6 +219,9 @@ fi
 
 ### Fetch lastest NXThemesInstaller from https://github.com/exelix11/SwitchThemeInjector/releases/latest
 curl -sL https://api.github.com/repos/exelix11/SwitchThemeInjector/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo NXThemesInstaller {} >> ../description.txt
+curl -sL https://api.github.com/repos/exelix11/SwitchThemeInjector/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o NXThemesInstaller.nro
 if [ $? -ne 0 ]; then
@@ -190,6 +232,9 @@ else
 fi
 
 ### Fetch lastest JKSV from https://github.com/J-D-K/JKSV/releases/latest
+curl -sL https://api.github.com/repos/J-D-K/JKSV/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo JKSV {} >> ../description.txt
 curl -sL https://api.github.com/repos/J-D-K/JKSV/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o JKSV.nro
@@ -202,6 +247,9 @@ fi
 
 ### Fetch lastest tencent-switcher-gui from https://github.com/CaiMiao/Tencent-switcher-GUI/releases/latest
 curl -sL https://api.github.com/repos/CaiMiao/Tencent-switcher-GUI/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo tencent-switcher-gui {} >> ../description.txt
+curl -sL https://api.github.com/repos/CaiMiao/Tencent-switcher-GUI/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o tencent-switcher-gui.nro
 if [ $? -ne 0 ]; then
@@ -212,6 +260,9 @@ else
 fi
 
 ### Fetch lastest Breeze from https://github.com/tomvita/Breeze-Beta/releases/latest
+curl -sL https://api.github.com/repos/tomvita/Breeze-Beta/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Breeze {} >> ../description.txt
 curl -sL https://api.github.com/repos/tomvita/Breeze-Beta/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Breeze.zip
@@ -435,12 +486,32 @@ else
     sed -i "s/L+DDOWN/L+Zl+R/g" config/tesla/config.ini
 fi
 
+###
+cat >> ../description.txt << ENDOFFILE
+ovlloader
+ovlmenu
+ovl-sysmodules
+EdiZon
+StatusMonitor
+sys-clk
+ReverseNX-RT
+emuiibo
+ldn_mitm
+fastcfwswitch
+Edizon-SE
+MissionControl
+sys-con
+ENDOFFILE
+
 ### Fetch Chinese lang
 mkdir -p switch/.overlays/lang/fastCFWswitch
 curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hans.json -o switch/.overlays/lang/fastCFWswitch/zh-Hans.json
 curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hant.json -o switch/.overlays/lang/fastCFWswitch/zh-Hant.json
 
 ### Fetch lastest Zing from https://github.com/tomvita/Zing/releases/latest
+curl -sL https://api.github.com/repos/tomvita/Zing/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Zing {} >> ../description.txt
 curl -sL https://api.github.com/repos/tomvita/Zing/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Zing.ovl
