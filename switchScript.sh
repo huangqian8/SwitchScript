@@ -479,10 +479,6 @@ else
     rm tesla.zip
     rm 大气层Tesla终极版插件包.txt
     rm -rf switch/DeepSea-Toolbox
-    #rm -rf config/fastCFWSwitch/
-    #rm -rf switch/.overlays/fastcfwswitch.ovl
-    mv switch/edizon/profile.zip switch/EdiZon
-    rm -rf switch/edizon
     sed -i "s/L+DDOWN/L+Zl+R/g" config/tesla/config.ini
 fi
 
