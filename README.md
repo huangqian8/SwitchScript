@@ -1,6 +1,7 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
+- 2023-05-11 更新脚本，修正 `Lockpick_RCM` 仓库失效造成的运行错误；每天16点定时生成整合包
 - 2023-05-04 更新脚本
 - 2023-04-28 更新脚本，自动生成 Release 内容
 - 2023-04-27 添加 Github Action 自动打包代码
@@ -17,7 +18,7 @@
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
     - [x] `SigPatches` [From Jits.cc](https://jits.cc/patches)
   - Payload 插件
-    - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [Frome Here](https://github.com/shchmue/Lockpick_RCM/releases/latest)
+    - [ ] 主机系统的密钥提取工具 `Lockpick_RCM` [Frome Here](https://github.com/shchmue/Lockpick_RCM/releases/latest)
     - [x] Hekate下的文件管理工具 `TegraExplorer` [Frome Here](https://github.com/zdm65477730/TegraExplorer/releases)
     - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [Frome Here](https://github.com/zdm65477730/CommonProblemResolver/releases)
   - Nro 插件列表
