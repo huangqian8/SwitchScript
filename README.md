@@ -1,6 +1,7 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
+- 2023-10-13 更新脚本，修正 `SigPatches` 链接更新造成的运行错误；新增2个Nro插件
 - 2023-05-11 更新脚本，修正 `Lockpick_RCM` 仓库失效造成的运行错误；每天16点定时生成整合包
 - 2023-05-04 更新脚本
 - 2023-04-28 更新脚本，自动生成 Release 内容
@@ -16,7 +17,7 @@
   - 大气层三件套
     - [x] `Hekate + Nyx` [From Here](https://github.com/CTCaer/hekate/releases/latest/)
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
-    - [x] `SigPatches` [From Jits.cc](https://jits.cc/patches)
+    - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023)
   - Payload 插件
     - [ ] 主机系统的密钥提取工具 `Lockpick_RCM` [Frome Here](https://github.com/shchmue/Lockpick_RCM/releases/latest)
     - [x] Hekate下的文件管理工具 `TegraExplorer` [Frome Here](https://github.com/zdm65477730/TegraExplorer/releases)
@@ -33,6 +34,8 @@
     - [x] 游戏存档管理工具 `JKSV` [From Here](https://github.com/J-D-K/JKSV/releases/latest)
     - [x] 系统切换工具 `tencent-switcher-gui` [From Here](https://github.com/CaiMiao/Tencent-switcher-GUI/releases/latest)
     - [x] 金手指工具 `Breeze` [From Here](https://github.com/tomvita/Breeze-Beta/releases/latest)
+    - [x] SigPatches更新工具 `Sigpatch-Updater` [From Here](https://github.com/ITotalJustice/sigpatch-updater/releases/latest)
+    - [x] 大气层三件套更新工具 `AtmoPackUpdater` [From Here](https://github.com/PoloNX/AtmoPackUpdater/releases)
   - 补丁
     - [x] `systemPatches` 补丁 [From Here](https://github.com/exelix11/theme-patches)
   - 特斯拉3中英文插件整合包
