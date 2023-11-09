@@ -1,7 +1,7 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
-- 2023-10-27 更新脚本，修正 `Tesla` 链接更新造成的运行错误
+- 2023-11-09 更新 `Lockpick_RCM` 仓库链接
 - 2023-10-13 更新脚本，修正 `SigPatches` 链接更新造成的运行错误；新增2个Nro插件
 - 2023-05-11 更新脚本，修正 `Lockpick_RCM` 仓库失效造成的运行错误；每天16点定时生成整合包
 - 2023-05-04 更新脚本
@@ -20,7 +20,7 @@
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
     - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023)
   - Payload 插件
-    - [ ] 主机系统的密钥提取工具 `Lockpick_RCM` [Frome Here](https://github.com/shchmue/Lockpick_RCM/releases/latest)
+    - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [Frome Here](https://github.com/iczero/Lockpick_RCM/releases/latest)
     - [x] Hekate下的文件管理工具 `TegraExplorer` [Frome Here](https://github.com/zdm65477730/TegraExplorer/releases)
     - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [Frome Here](https://github.com/zdm65477730/CommonProblemResolver/releases)
   - Nro 插件列表

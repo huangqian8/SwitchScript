@@ -73,12 +73,11 @@ else
     mv fusee.bin ./bootloader/payloads
 fi
 
-<<COMMENT
-### Fetch latest Lockpick_RCM.bin from https://github.com/shchmue/Lockpick_RCM/releases/latest
-curl -sL https://api.github.com/repos/shchmue/Lockpick_RCM/releases/latest \
+### Fetch latest Lockpick_RCM.bin from https://github.com/iczero/Lockpick_RCM/releases/latest
+curl -sL https://api.github.com/repos/iczero/Lockpick_RCM/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo Lockpick_RCM {} >> ../description.txt
-curl -sL https://api.github.com/repos/shchmue/Lockpick_RCM/releases/latest \
+curl -sL https://api.github.com/repos/iczero/Lockpick_RCM/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Lockpick_RCM.bin
 if [ $? -ne 0 ]; then
@@ -87,7 +86,6 @@ else
     echo "Lockpick_RCM download\033[32m success\033[0m."
     mv Lockpick_RCM.bin ./bootloader/payloads
 fi
-COMMENT
 
 ### Fetch latest TegraExplorer.bin form https://github.com/zdm65477730/TegraExplorer/releases
 curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
