@@ -20,12 +20,12 @@
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
     - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023)
   - Payload 插件
-    - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [Frome Here](https://github.com/iczero/Lockpick_RCM/releases/latest)
-    - [x] Hekate下的文件管理工具 `TegraExplorer` [Frome Here](https://github.com/zdm65477730/TegraExplorer/releases)
-    - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [Frome Here](https://github.com/zdm65477730/CommonProblemResolver/releases)
+    - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [From Here](https://github.com/iczero/Lockpick_RCM/releases/latest)
+    - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/zdm65477730/TegraExplorer/releases)
+    - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [From Here](https://github.com/zdm65477730/CommonProblemResolver/releases)
   - Nro 插件列表
-    - [x] 一键关机重启工具 `Safe_Reboot_Shutdown.nro` [Frome Here](https://github.com/dezem/Safe_Reboot_Shutdown/releases/latest)
-    - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester.nro` [Frome Here](https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest)
+    - [x] 一键关机重启工具 `Safe_Reboot_Shutdown.nro` [From Here](https://github.com/dezem/Safe_Reboot_Shutdown/releases/latest)
+    - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester.nro` [From Here](https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest)
     - [x] 游戏存档管理工具 `Checkpoint` [From Here](https://github.com/BernardoGiordano/Checkpoint/releases/latest)
     - [x] 游戏安装，存档管理和文件传输工具 `DBI` [From Here](https://github.com/rashevskyv/dbi/releases/latest)
     - [x] 游戏安装和文件传输工具 `Awoo Installer` [From Here](https://github.com/dragonflylee/Awoo-Installer/releases/latest)
