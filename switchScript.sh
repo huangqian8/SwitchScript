@@ -302,6 +302,35 @@ else
     mv AtmoPackUpdater.nro ./switch
 fi
 
+### Fetch lastest hbmenu from https://github.com/switchbrew/nx-hbmenu/releases
+curl -sL https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo hbmenu {} >> ../description.txt
+curl -sL https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o nx-hbmenu.zip
+if [ $? -ne 0 ]; then
+    echo "hbmenu download\033[31m failed\033[0m."
+else
+    echo "hbmenu download\033[32m success\033[0m."
+    unzip -oq nx-hbmenu.zip
+    rm nx-hbmenu.zip
+fi
+
+### Fetch lastest SwitchTime from https://github.com/3096/switch-time/releases
+curl -sL https://api.github.com/repos/3096/switch-time/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo switch-time {} >> ../description.txt
+curl -sL https://api.github.com/repos/3096/switch-time/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o switch-time.nro
+if [ $? -ne 0 ]; then
+    echo "switch-time download\033[31m failed\033[0m."
+else
+    echo "switch-time download\033[32m success\033[0m."
+    mv switch-time.nro ./switch
+fi
+
 ### Fetch lastest systemPatches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
