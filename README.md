@@ -1,6 +1,7 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
+- 2023-12-03 添加 `Atmosphere-OC-Suite` 插件
 - 2023-11-25 添加 `hbmenu` 和 `SwitchTime` 插件
 - 2023-11-09 更新 `Lockpick_RCM` 仓库链接
 - 2023-10-13 更新脚本，修正 `SigPatches` 链接更新造成的运行错误；新增2个Nro插件
@@ -37,9 +38,10 @@
     - [x] 系统切换工具 `tencent-switcher-gui` [From Here](https://github.com/CaiMiao/Tencent-switcher-GUI/releases/latest)
     - [x] 金手指工具 `Breeze` [From Here](https://github.com/tomvita/Breeze-Beta/releases/latest)
     - [x] SigPatches更新工具 `Sigpatch-Updater` [From Here](https://github.com/ITotalJustice/sigpatch-updater/releases/latest)
-    - [x] 大气层三件套更新工具 `AtmoPackUpdater` [From Here](https://github.com/PoloNX/AtmoPackUpdater/releases)
-    - [x] 前端菜单 `hbmenu` [From Here](https://github.com/switchbrew/nx-hbmenu/releases)
-    - [x] 时间调整工具 `SwitchTime` [From Here](https://github.com/3096/switch-time/releases)
+    - [x] 大气层三件套更新工具 `AtmoPackUpdater` [From Here](https://github.com/PoloNX/AtmoPackUpdater/releases/latest)
+    - [x] 前端菜单 `hbmenu` [From Here](https://github.com/switchbrew/nx-hbmenu/releases/latest)
+    - [x] 时间调整工具 `SwitchTime` [From Here](https://github.com/3096/switch-time/releases/latest)
+    - [x] 极限超频插件 `Atmosphere-OC-Suite` [From Here](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest)
   - 补丁
     - [x] `systemPatches` 补丁 [From Here](https://github.com/exelix11/theme-patches)
   - 特斯拉3中英文插件整合包
