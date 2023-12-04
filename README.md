@@ -1,7 +1,7 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
-- 2023-12-04 删除 `Safe_Reboot_Shutdown.nro` 插件
+- 2023-12-04 删除 `Safe_Reboot_Shutdown.nro` 插件，添加3个 `Ovl` 插件
 - 2023-12-03 添加 `Atmosphere-OC-Suite` 插件
 - 2023-11-25 添加 `hbmenu` 和 `SwitchTime` 插件
 - 2023-11-09 更新 `Lockpick_RCM` 仓库链接
@@ -47,6 +47,9 @@
     - [x] `Tesla3` [From Here](https://github.com/laila509/Tesla-plugins/releases/latest)
   - Ovl 插件
     - [x] 金手指工具 `Zing` [From Here](https://github.com/tomvita/Zing/releases/latest)
+    - [x] 屏幕色彩调节 `Fizeau` [From Here](https://github.com/averne/Fizeau/releases/latest)
+    - [x] 时间同步 `QuickNTP` [From Here](https://github.com/nedex/QuickNTP/releases/latest)
+    - [x] 系统补丁 `sys-patch` [From Here](https://github.com/ITotalJustice/sys-patch/releases/latest)
 
 - 文件操作：
     - [x] 移动 `fusee.bin` 至 `bootloader/payloads` 文件夹

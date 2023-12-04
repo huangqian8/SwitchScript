@@ -525,11 +525,6 @@ MissionControl
 sys-con
 ENDOFFILE
 
-### Fetch Chinese lang
-mkdir -p switch/.overlays/lang/fastCFWswitch
-curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hans.json -o switch/.overlays/lang/fastCFWswitch/zh-Hans.json
-curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hant.json -o switch/.overlays/lang/fastCFWswitch/zh-Hant.json
-
 ### Fetch lastest Zing from https://github.com/tomvita/Zing/releases/latest
 curl -sL https://api.github.com/repos/tomvita/Zing/releases/latest \
   | jq '.tag_name' \
@@ -542,6 +537,50 @@ if [ $? -ne 0 ]; then
 else
     echo "Zing download\033[32m success\033[0m."
     mv Zing.ovl ./switch/.overlays
+fi
+
+### Fetch lastest Fizeau from https://github.com/averne/Fizeau/releases/latest
+curl -sL https://api.github.com/repos/averne/Fizeau/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Fizeau {} >> ../description.txt
+curl -sL https://api.github.com/repos/averne/Fizeau/releases/latest \
+  | jq '.assets' | jq '.[1].browser_download_url' \
+  | xargs -I {} curl -sL {} -o Fizeau.zip
+if [ $? -ne 0 ]; then
+    echo "Fizeau download\033[31m failed\033[0m."
+else
+    echo "Fizeau download\033[32m success\033[0m."
+    unzip -oq Fizeau.zip
+    rm Fizeau.zip
+fi
+
+### Fetch lastest QuickNTP from https://github.com/nedex/QuickNTP/releases/latest
+curl -sL https://api.github.com/repos/nedex/QuickNTP/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo QuickNTP {} >> ../description.txt
+curl -sL https://api.github.com/repos/nedex/QuickNTP/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o QuickNTP.ovl
+if [ $? -ne 0 ]; then
+    echo "QuickNTP download\033[31m failed\033[0m."
+else
+    echo "QuickNTP download\033[32m success\033[0m."
+    mv QuickNTP.ovl ./switch/.overlays
+fi
+
+### Fetch lastest sys-patch from https://github.com/ITotalJustice/sys-patch/releases/latest
+curl -sL https://api.github.com/repos/ITotalJustice/sys-patch/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo sys-patch {} >> ../description.txt
+curl -sL https://api.github.com/repos/ITotalJustice/sys-patch/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o sys-patch.zip
+if [ $? -ne 0 ]; then
+    echo "sys-patch download\033[31m failed\033[0m."
+else
+    echo "sys-patch download\033[32m success\033[0m."
+    unzip -oq sys-patch.zip
+    rm sys-patch.zip
 fi
 
 ### Fetch lastest Switch-OC-Suite from https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest
@@ -559,9 +598,39 @@ else
     rm AIO.zip
 fi
 
+### Fetch Chinese lang
+mkdir -p switch/.overlays/lang/fastCFWswitch
+curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hans.json -o switch/.overlays/lang/fastCFWswitch/zh-Hans.json
+curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hant.json -o switch/.overlays/lang/fastCFWswitch/zh-Hant.json
+mkdir -p switch/.overlays/lang/QuickNTP
+curl -sL https://raw.githubusercontent.com/zdm65477730/QuickNTP/master/lang/zh-Hans.json -o switch/.overlays/lang/QuickNTP/zh-Hans.json
+curl -sL https://raw.githubusercontent.com/zdm65477730/QuickNTP/master/lang/zh-Hant.json -o switch/.overlays/lang/QuickNTP/zh-Hant.json
+mkdir -p switch/.overlays/lang/Fizeau
+curl -sL https://raw.githubusercontent.com/zdm65477730/Fizeau/master/lang/zh-Hans.json -o switch/.overlays/lang/Fizeau/zh-Hans.json
+curl -sL https://raw.githubusercontent.com/zdm65477730/Fizeau/master/lang/zh-Hant.json -o switch/.overlays/lang/Fizeau/zh-Hant.json
+
+### Delete sys-clk.ovl
+rm switch/.overlays/sys-clk.ovl
+
 ### Delete reboot_to_payload.nro & reboot_to_hekate.nro
 rm switch/reboot_to_payload.nro
 rm switch/reboot_to_hekate.nro
+
+### Write sort.cfg in /config/Tesla-Menu/sort.cfg
+cat > ./config/Tesla-Menu/sort.cfg << ENDOFFILE
+EdiZon
+ovl-sysmodules
+StatusMonitor
+sys-clk-overlay
+ReverseNX-RT
+fastcfwswitch
+ldn_mitm
+emuiibo
+QuickNTP
+Fizeau
+Zing
+sys-patch
+ENDOFFILE
 
 # -------------------------------------------
 
