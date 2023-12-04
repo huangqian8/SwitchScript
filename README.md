@@ -1,6 +1,7 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
+- 2023-12-04 删除 `Safe_Reboot_Shutdown.nro` 插件
 - 2023-12-03 添加 `Atmosphere-OC-Suite` 插件
 - 2023-11-25 添加 `hbmenu` 和 `SwitchTime` 插件
 - 2023-11-09 更新 `Lockpick_RCM` 仓库链接
@@ -26,7 +27,6 @@
     - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/zdm65477730/TegraExplorer/releases)
     - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [From Here](https://github.com/zdm65477730/CommonProblemResolver/releases)
   - Nro 插件列表
-    - [x] 一键关机重启工具 `Safe_Reboot_Shutdown.nro` [From Here](https://github.com/dezem/Safe_Reboot_Shutdown/releases/latest)
     - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester.nro` [From Here](https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest)
     - [x] 游戏存档管理工具 `Checkpoint` [From Here](https://github.com/BernardoGiordano/Checkpoint/releases/latest)
     - [x] 游戏安装，存档管理和文件传输工具 `DBI` [From Here](https://github.com/rashevskyv/dbi/releases/latest)
@@ -39,11 +39,10 @@
     - [x] 金手指工具 `Breeze` [From Here](https://github.com/tomvita/Breeze-Beta/releases/latest)
     - [x] SigPatches更新工具 `Sigpatch-Updater` [From Here](https://github.com/ITotalJustice/sigpatch-updater/releases/latest)
     - [x] 大气层三件套更新工具 `AtmoPackUpdater` [From Here](https://github.com/PoloNX/AtmoPackUpdater/releases/latest)
-    - [x] 前端菜单 `hbmenu` [From Here](https://github.com/switchbrew/nx-hbmenu/releases/latest)
     - [x] 时间调整工具 `SwitchTime` [From Here](https://github.com/3096/switch-time/releases/latest)
     - [x] 极限超频插件 `Atmosphere-OC-Suite` [From Here](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest)
   - 补丁
-    - [x] `systemPatches` 补丁 [From Here](https://github.com/exelix11/theme-patches)
+    - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - 特斯拉3中英文插件整合包
     - [x] `Tesla3` [From Here](https://github.com/laila509/Tesla-plugins/releases/latest)
   - Ovl 插件

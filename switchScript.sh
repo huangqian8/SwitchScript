@@ -52,16 +52,6 @@ else
     rm atmosphere.zip
 fi
 
-### Fetch latest SigPatches.zip from
-curl -sL https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023 -o sigpatches.zip
-if [ $? -ne 0 ]; then
-    echo "SigPatches download\033[31m failed\033[0m."
-else
-    echo "SigPatches download\033[32m success\033[0m."
-    unzip -oq sigpatches.zip
-    rm sigpatches.zip
-fi
-
 ### Fetch latest fusee.bin from https://github.com/Atmosphere-NX/Atmosphere/releases/latest
 curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
   | jq '.assets' | jq '.[1].browser_download_url' \
@@ -71,6 +61,16 @@ if [ $? -ne 0 ]; then
 else
     echo "fusee download\033[32m success\033[0m."
     mv fusee.bin ./bootloader/payloads
+fi
+
+### Fetch latest SigPatches.zip from
+curl -sL https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023 -o sigpatches.zip
+if [ $? -ne 0 ]; then
+    echo "SigPatches download\033[31m failed\033[0m."
+else
+    echo "SigPatches download\033[32m success\033[0m."
+    unzip -oq sigpatches.zip
+    rm sigpatches.zip
 fi
 
 ### Fetch latest Lockpick_RCM.bin from https://github.com/iczero/Lockpick_RCM/releases/latest
@@ -113,22 +113,6 @@ if [ $? -ne 0 ]; then
 else
     echo "CommonProblemResolver download\033[32m success\033[0m."
     mv CommonProblemResolver.bin ./bootloader/payloads
-fi
-
-### Fetch lastest Safe_Reboot_Shutdown from https://github.com/dezem/Safe_Reboot_Shutdown/releases/latest
-curl -sL https://api.github.com/repos/dezem/Safe_Reboot_Shutdown/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo Safe_Reboot_Shutdown {} >> ../description.txt
-curl -sL https://api.github.com/repos/dezem/Safe_Reboot_Shutdown/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o Safe_Reboot_Shutdown.zip
-if [ $? -ne 0 ]; then
-    echo "Safe_Reboot_Shutdown download\033[31m failed\033[0m."
-else
-    echo "Safe_Reboot_Shutdown download\033[32m success\033[0m."
-    unzip -oq Safe_Reboot_Shutdown.zip
-    rm Safe_Reboot_Shutdown.zip
-    mv Safe_Reboot_Shutdown.nro ./switch
 fi
 
 ### Fetch lastest Switch_90DNS_tester from https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest
@@ -302,21 +286,6 @@ else
     mv AtmoPackUpdater.nro ./switch
 fi
 
-### Fetch lastest hbmenu from https://github.com/switchbrew/nx-hbmenu/releases
-curl -sL https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest \
-  | jq '.name' \
-  | xargs -I {} echo hbmenu {} >> ../description.txt
-curl -sL https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o nx-hbmenu.zip
-if [ $? -ne 0 ]; then
-    echo "hbmenu download\033[31m failed\033[0m."
-else
-    echo "hbmenu download\033[32m success\033[0m."
-    unzip -oq nx-hbmenu.zip
-    rm nx-hbmenu.zip
-fi
-
 ### Fetch lastest SwitchTime from https://github.com/3096/switch-time/releases
 curl -sL https://api.github.com/repos/3096/switch-time/releases/latest \
   | jq '.tag_name' \
@@ -331,7 +300,7 @@ else
     mv switch-time.nro ./switch
 fi
 
-### Fetch lastest systemPatches from https://github.com/exelix11/theme-patches
+### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
     echo "theme-patches download\033[31m failed\033[0m."
