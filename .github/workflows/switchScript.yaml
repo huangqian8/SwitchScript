@@ -58,7 +58,7 @@ jobs:
         artifacts: "SwitchSD.zip"
 
     - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@v0.1.0
+      uses: dev-drprasad/delete-older-releases@v0.3.2
       with:
         keep_latest: 5
         delete_tags: true
