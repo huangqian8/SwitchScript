@@ -73,11 +73,11 @@ else
     rm sigpatches.zip
 fi
 
-### Fetch latest Lockpick_RCM.bin from https://github.com/iczero/Lockpick_RCM/releases/latest
-curl -sL https://api.github.com/repos/iczero/Lockpick_RCM/releases/latest \
+### Fetch latest Lockpick_RCM.bin from https://github.com/Decscots/Lockpick_RCM/releases/latest
+curl -sL https://api.github.com/repos/Decscots/Lockpick_RCM/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo Lockpick_RCM {} >> ../description.txt
-curl -sL https://api.github.com/repos/iczero/Lockpick_RCM/releases/latest \
+curl -sL https://api.github.com/repos/Decscots/Lockpick_RCM/releases/latest \
   | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o Lockpick_RCM.bin
 if [ $? -ne 0 ]; then
