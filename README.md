@@ -1,10 +1,11 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
+- 2024-01-09 更新 `Tesla3` 仓库链接
 - 2023-12-15 更新 `Lockpick_RCM` 仓库链接
 - 2023-12-04 删除 `Safe_Reboot_Shutdown.nro` 插件，添加3个 `Ovl` 插件
 - 2023-12-03 添加 `Atmosphere-OC-Suite` 插件
-- 2023-11-25 添加 `hbmenu` 和 `SwitchTime` 插件
+- 2023-11-25 添加 `SwitchTime` 插件
 - 2023-11-09 更新 `Lockpick_RCM` 仓库链接
 - 2023-10-13 更新脚本，修正 `SigPatches` 链接更新造成的运行错误；新增2个Nro插件
 - 2023-05-11 更新脚本，修正 `Lockpick_RCM` 仓库失效造成的运行错误；每天16点定时生成整合包
