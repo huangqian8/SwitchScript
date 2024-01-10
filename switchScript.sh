@@ -495,7 +495,7 @@ fi
 
 ### Fetch lastest Tesla3 from https://github.com/laila509/Tesla-plugins/releases/latest
 curl -sL https://api.github.com/repos/laila509/Tesla-plugins/releases/latest \
-  | jq '.assets' | jq '.[1].browser_download_url' \
+  | jq '.assets' | jq '.[0].browser_download_url' \
   | xargs -I {} curl -sL {} -o tesla.zip
 if [ $? -ne 0 ]; then
     echo "tesla download\033[31m failed\033[0m."
