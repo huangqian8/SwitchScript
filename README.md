@@ -1,13 +1,14 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
+- 2024-01-19 添加3个 `Nro` 插件
 - 2024-01-09 更新 `Tesla3` 仓库链接
 - 2023-12-15 更新 `Lockpick_RCM` 仓库链接
 - 2023-12-04 删除 `Safe_Reboot_Shutdown.nro` 插件，添加3个 `Ovl` 插件
 - 2023-12-03 添加 `Atmosphere-OC-Suite` 插件
 - 2023-11-25 添加 `SwitchTime` 插件
 - 2023-11-09 更新 `Lockpick_RCM` 仓库链接
-- 2023-10-13 更新脚本，修正 `SigPatches` 链接更新造成的运行错误；新增2个Nro插件
+- 2023-10-13 更新脚本，修正 `SigPatches` 链接更新造成的运行错误；新增2个 `Nro` 插件
 - 2023-05-11 更新脚本，修正 `Lockpick_RCM` 仓库失效造成的运行错误；每天16点定时生成整合包
 - 2023-05-04 更新脚本
 - 2023-04-28 更新脚本，自动生成 Release 内容
@@ -43,6 +44,9 @@
     - [x] 大气层三件套更新工具 `AtmoPackUpdater` [From Here](https://github.com/PoloNX/AtmoPackUpdater/releases/latest)
     - [x] 时间调整工具 `SwitchTime` [From Here](https://github.com/3096/switch-time/releases/latest)
     - [x] 极限超频插件 `Atmosphere-OC-Suite` [From Here](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest)
+    - [x] 多工具合一任天堂 Switch 更新器 `aio-switch-updater` [From Here](https://github.com/HamletDuFromage/aio-switch-updater/releases/latest)
+    - [x] 第三方 B站 客户端 `wiliwili` [From Here](https://github.com/xfangfang/wiliwili/releases/latest)
+    - [x] Mod 下载器 `SimpleModDownloader` [From Here](https://github.com/PoloNX/SimpleModDownloader/releases/latest)
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - 特斯拉3中英文插件整合包

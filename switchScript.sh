@@ -598,6 +598,52 @@ else
     rm AIO.zip
 fi
 
+### Fetch lastest aio-switch-updater from https://github.com/HamletDuFromage/aio-switch-updater/releases/latest
+curl -sL https://api.github.com/repos/HamletDuFromage/aio-switch-updater/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo aio-switch-updater {} >> ../description.txt
+curl -sL https://api.github.com/repos/HamletDuFromage/aio-switch-updater/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o aio-switch-updater.zip
+if [ $? -ne 0 ]; then
+    echo "aio-switch-updater download\033[31m failed\033[0m."
+else
+    echo "aio-switch-updater download\033[32m success\033[0m."
+    unzip -oq aio-switch-updater.zip
+    rm aio-switch-updater.zip
+fi
+
+### Fetch lastest wiliwili from https://github.com/xfangfang/wiliwili/releases/latest
+curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo wiliwili {} >> ../description.txt
+curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest \
+  | jq '.assets' | jq '.[7].browser_download_url' \
+  | xargs -I {} curl -sL {} -o wiliwili-NintendoSwitch.zip
+if [ $? -ne 0 ]; then
+    echo "wiliwili download\033[31m failed\033[0m."
+else
+    echo "wiliwili download\033[32m success\033[0m."
+    unzip -oq wiliwili-NintendoSwitch.zip
+    mv wiliwili/wiliwili.nro ./switch
+    rm -rf wiliwili
+    rm wiliwili-NintendoSwitch.zip
+fi
+
+### Fetch lastest SimpleModDownloader from https://github.com/PoloNX/SimpleModDownloader/releases/latest
+curl -sL https://api.github.com/repos/PoloNX/SimpleModDownloader/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo SimpleModDownloader {} >> ../description.txt
+curl -sL https://api.github.com/repos/PoloNX/SimpleModDownloader/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o SimpleModDownloader.nro
+if [ $? -ne 0 ]; then
+    echo "SimpleModDownloader download\033[31m failed\033[0m."
+else
+    echo "SimpleModDownloader download\033[32m success\033[0m."
+    mv SimpleModDownloader.nro ./switch
+fi
+
 ### Fetch Chinese lang
 mkdir -p switch/.overlays/lang/fastCFWswitch
 curl -sL https://raw.githubusercontent.com/zdm65477730/fastCFWswitch/master/lang/zh-Hans.json -o switch/.overlays/lang/fastCFWswitch/zh-Hans.json
