@@ -129,6 +129,7 @@ else
     mv Switch_90DNS_tester.nro ./switch
 fi
 
+<< 'Comment'
 ### Fetch lastest Checkpoint from https://github.com/BernardoGiordano/Checkpoint/releases/latest
 curl -sL https://api.github.com/repos/BernardoGiordano/Checkpoint/releases/latest \
   | jq '.tag_name' \
@@ -142,6 +143,7 @@ else
     echo "Checkpoint download\033[32m success\033[0m."
     mv Checkpoint.nro ./switch/Checkpoint
 fi
+Comment
 
 ### Fetch lastest DBI from https://github.com/rashevskyv/dbi/releases/latest
 curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
@@ -642,6 +644,21 @@ if [ $? -ne 0 ]; then
 else
     echo "SimpleModDownloader download\033[32m success\033[0m."
     mv SimpleModDownloader.nro ./switch
+fi
+
+### Fetch lastest sys-tune from https://github.com/HookedBehemoth/sys-tune/releases/latest
+curl -sL https://api.github.com/repos/HookedBehemoth/sys-tune/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo sys-tune {} >> ../description.txt
+curl -sL https://api.github.com/repos/HookedBehemoth/sys-tune/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o sys-tune.zip
+if [ $? -ne 0 ]; then
+    echo "sys-tune download\033[31m failed\033[0m."
+else
+    echo "sys-tune download\033[32m success\033[0m."
+    unzip -oq sys-tune.zip
+    rm sys-tune.zip
 fi
 
 ### Fetch Chinese lang

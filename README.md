@@ -1,7 +1,8 @@
 # 大气层个人整合包生成脚本
 
 ## 更新日志
-- 2024-01-19 添加3个 `Nro` 插件
+- 2024-01-24 添加 `sys-tune` 插件
+- 2024-01-19 添加 `aio-switch-updater`、`wiliwili`、`SimpleModDownloader` 插件
 - 2024-01-09 更新 `Tesla3` 仓库链接
 - 2023-12-15 更新 `Lockpick_RCM` 仓库链接
 - 2023-12-04 删除 `Safe_Reboot_Shutdown.nro` 插件，添加3个 `Ovl` 插件
@@ -14,7 +15,7 @@
 - 2023-04-28 更新脚本，自动生成 Release 内容
 - 2023-04-27 添加 Github Action 自动打包代码
 
-## 使用说明（仅适用于 `Linux` ）:
+## 使用说明（仅适用于 `Linux` ，科学上网环境）:
   - 安装 `jq` 工具
   - 运行脚本
 
@@ -23,6 +24,7 @@
 - 下载最新：
   - 大气层三件套
     - [x] `Hekate + Nyx` [From Here](https://github.com/CTCaer/hekate/releases/latest/)
+      - [ ] `Hekate + Nyx 简体汉化版` [From Here](https://github.com/easyworld/hekate/releases/latest/)
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
     - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023)
   - Payload 插件
@@ -31,7 +33,7 @@
     - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [From Here](https://github.com/zdm65477730/CommonProblemResolver/releases/latest)
   - Nro 插件列表
     - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester.nro` [From Here](https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest)
-    - [x] 游戏存档管理工具 `Checkpoint` [From Here](https://github.com/BernardoGiordano/Checkpoint/releases/latest)
+    - [ ] 游戏存档管理工具 `Checkpoint` [From Here](https://github.com/BernardoGiordano/Checkpoint/releases/latest)
     - [x] 游戏安装，存档管理和文件传输工具 `DBI` [From Here](https://github.com/rashevskyv/dbi/releases/latest)
     - [x] 游戏安装和文件传输工具 `Awoo Installer` [From Here](https://github.com/dragonflylee/Awoo-Installer/releases/latest)
     - [x] 深海工具箱 `Hekate-toolbox` [From Here](https://github.com/WerWolv/Hekate-Toolbox/releases/latest)
@@ -47,6 +49,7 @@
     - [x] 多工具合一任天堂 Switch 更新器 `aio-switch-updater` [From Here](https://github.com/HamletDuFromage/aio-switch-updater/releases/latest)
     - [x] 第三方 B站 客户端 `wiliwili` [From Here](https://github.com/xfangfang/wiliwili/releases/latest)
     - [x] Mod 下载器 `SimpleModDownloader` [From Here](https://github.com/PoloNX/SimpleModDownloader/releases/latest)
+    - [x] 后台音乐 `sys-tune` [From Here](https://github.com/HookedBehemoth/sys-tune/releases/latest)
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - 特斯拉3中英文插件整合包
@@ -63,7 +66,7 @@
     - [x] 在 `bootloader` 文件夹中创建 `hekate_ipl.ini`
     - [x] 在根目录中创建 `exosphere.ini`
     - [x] 在 `atmosphere` 文件夹中创建 `hosts` 文件夹
-    - [x] 在 `atmosphere/hosts` 文件夹中创建 `emummc.txt` 和 `sysmmc.txt` ，屏蔽任天堂服务器
+    - [x] 在 `atmosphere/hosts` 文件夹中创建 `emummc.txt` 和 `sysmmc.txt`
     - [x] 在根目录中创建 `boot.ini`
     - [x] 在 `atmosphere/config` 文件夹中创建 `override_config.ini`
     - [x] 在 `atmosphere/config` 文件夹中创建 `system_settings.ini`
