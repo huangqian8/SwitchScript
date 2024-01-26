@@ -19,21 +19,6 @@ mkdir -p ./SwitchSD/atmosphere/hosts
 mkdir -p ./SwitchSD/config/tesla
 cd SwitchSD
 
-### Fetch latest Hekate + Nyx from https://github.com/CTCaer/hekate/releases/latest
-curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
-  | jq '.name' \
-  | xargs -I {} echo {} >> ../description.txt
-curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o hekate.zip
-if [ $? -ne 0 ]; then
-    echo "Hekate + Nyx download\033[31m failed\033[0m."
-else
-    echo "Hekate + Nyx download\033[32m success\033[0m."
-    unzip -oq hekate.zip
-    rm hekate.zip
-fi
-
 ### Fetch latest atmosphere from https://github.com/Atmosphere-NX/Atmosphere/releases/latest
 curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
   | jq '.name' \
@@ -57,7 +42,23 @@ if [ $? -ne 0 ]; then
     echo "fusee download\033[31m failed\033[0m."
 else
     echo "fusee download\033[32m success\033[0m."
+    mkdir -p ./bootloader/payloads
     mv fusee.bin ./bootloader/payloads
+fi
+
+### Fetch latest Hekate + Nyx from https://github.com/CTCaer/hekate/releases/latest
+curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
+curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
+  | jq '.assets' | jq '.[0].browser_download_url' \
+  | xargs -I {} curl -sL {} -o hekate.zip
+if [ $? -ne 0 ]; then
+    echo "Hekate + Nyx download\033[31m failed\033[0m."
+else
+    echo "Hekate + Nyx download\033[32m success\033[0m."
+    unzip -oq hekate.zip
+    rm hekate.zip
 fi
 
 ### Fetch latest SigPatches.zip from
@@ -534,7 +535,7 @@ else
     echo "Rename hekate_ctcaer_*.bin to payload.bin\033[32m success\033[0m."
 fi
 
-### Write hekate_ipl.ini in /bootloader/ directory
+### Write hekate_ipl.ini in /bootloader/
 cat > ./bootloader/hekate_ipl.ini << ENDOFFILE
 [config]
 autoboot=0
@@ -602,7 +603,7 @@ else
     echo "Writing exosphere.ini in root of SD card\033[32m success\033[0m."
 fi
 
-### Write emummc.txt in /atmosphere/hosts
+### Write emummc.txt & sysmmc.txt in /atmosphere/hosts
 cat > ./atmosphere/hosts/emummc.txt << ENDOFFILE
 # 屏蔽任天堂服务器
 127.0.0.1 *nintendo.*
@@ -643,7 +644,7 @@ cat > ./atmosphere/config/override_config.ini << ENDOFFILE
 [hbl_config] 
 program_id_0=010000000000100D
 override_address_space=39_bit
-; 按住 R 键 相册进入HBL自制软件界面。
+; 按住R键点击相册进入HBL自制软件界面。
 override_key_0=R
 ENDOFFILE
 if [ $? -ne 0 ]; then
