@@ -61,7 +61,28 @@ else
     rm hekate.zip
 fi
 
-### Fetch latest SigPatches.zip from
+### Fetch Nyx CHS
+curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/lang/nyx.zip -o nyx.zip
+if [ $? -ne 0 ]; then
+    echo "Nyx CHS download\033[31m failed\033[0m."
+else
+    echo "Nyx CHS download\033[32m success\033[0m."
+    mv ./bootloader/sys/nyx.bin ./bootloader/sys/nys-en.bin
+    unzip -oq nyx.zip
+    rm nyx.zip
+fi
+
+### Fetch logo
+curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/theme/logo.zip -o logo.zip
+if [ $? -ne 0 ]; then
+    echo "logo download\033[31m failed\033[0m."
+else
+    echo "logo download\033[32m success\033[0m."
+    unzip -oq logo.zip
+    rm logo.zip
+fi
+
+### Fetch latest SigPatches.zip
 curl -sL https://sigmapatches.coomer.party/sigpatches.zip?12.02.2023 -o sigpatches.zip
 if [ $? -ne 0 ]; then
     echo "SigPatches download\033[31m failed\033[0m."
@@ -221,66 +242,6 @@ else
     echo "tencent-switcher-gui download\033[32m success\033[0m."
     mkdir -p ./switch/tencent-switcher-gui
     mv tencent-switcher-gui.nro ./switch/tencent-switcher-gui
-fi
-
-### Fetch lastest Breeze from https://github.com/tomvita/Breeze-Beta/releases/latest
-curl -sL https://api.github.com/repos/tomvita/Breeze-Beta/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo Breeze {} >> ../description.txt
-curl -sL https://api.github.com/repos/tomvita/Breeze-Beta/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o Breeze.zip
-if [ $? -ne 0 ]; then
-    echo "Breeze download\033[31m failed\033[0m."
-else
-    echo "Breeze download\033[32m success\033[0m."
-    unzip -oq Breeze.zip
-    rm Breeze.zip
-fi
-
-### Fetch lastest Sigpatch-Updater from https://github.com/ITotalJustice/sigpatch-updater/releases/latest
-curl -sL https://api.github.com/repos/ITotalJustice/sigpatch-updater/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo sigpatch-updater {} >> ../description.txt
-curl -sL https://api.github.com/repos/ITotalJustice/sigpatch-updater/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o sigpatch-updater.nro
-if [ $? -ne 0 ]; then
-    echo "Sigpatch-Updater download\033[31m failed\033[0m."
-else
-    echo "Sigpatch-Updater download\033[32m success\033[0m."
-    mkdir -p ./switch/sigpatch-updater
-    mv sigpatch-updater.nro ./switch/sigpatch-updater
-fi
-
-### Fetch lastest AtmoPackUpdater from https://github.com/PoloNX/AtmoPackUpdater/releases
-curl -sL https://api.github.com/repos/PoloNX/AtmoPackUpdater/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo AtmoPackUpdater {} >> ../description.txt
-curl -sL https://api.github.com/repos/PoloNX/AtmoPackUpdater/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o AtmoPackUpdater.nro
-if [ $? -ne 0 ]; then
-    echo "AtmoPackUpdater download\033[31m failed\033[0m."
-else
-    echo "AtmoPackUpdater download\033[32m success\033[0m."
-    mkdir -p ./switch/AtmoPackUpdater
-    mv AtmoPackUpdater.nro ./switch/AtmoPackUpdater
-fi
-
-### Fetch lastest SwitchTime from https://github.com/3096/switch-time/releases
-curl -sL https://api.github.com/repos/3096/switch-time/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo switch-time {} >> ../description.txt
-curl -sL https://api.github.com/repos/3096/switch-time/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
-  | xargs -I {} curl -sL {} -o switch-time.nro
-if [ $? -ne 0 ]; then
-    echo "switch-time download\033[31m failed\033[0m."
-else
-    echo "switch-time download\033[32m success\033[0m."
-    mkdir -p ./switch/switch-time
-    mv switch-time.nro ./switch/switch-time
 fi
 
 ### Fetch lastest aio-switch-updater from https://github.com/HamletDuFromage/aio-switch-updater/releases/latest
@@ -703,9 +664,9 @@ else
 fi
 
 ### Delete unneeded files
-rm switch/haze.nro
-rm switch/reboot_to_hekate.nro
-rm switch/reboot_to_payload.nro
+rm switch/haze.nro || true
+rm switch/reboot_to_hekate.nro || true
+rm switch/reboot_to_payload.nro || true
 
 # -------------------------------------------
 
