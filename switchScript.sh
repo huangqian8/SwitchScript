@@ -292,6 +292,21 @@ else
     mv SimpleModDownloader.nro ./switch/SimpleModDownloader
 fi
 
+### Fetch lastest Switchfin from https://github.com/dragonflylee/switchfin/releases/latest
+curl -sL https://api.github.com/repos/dragonflylee/switchfin/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Switchfin {} >> ../description.txt
+curl -sL https://api.github.com/repos/dragonflylee/switchfin/releases/latest \
+  | jq '.assets' | jq '.[5].browser_download_url' \
+  | xargs -I {} curl -sL {} -o Switchfin.nro
+if [ $? -ne 0 ]; then
+    echo "Switchfin download\033[31m failed\033[0m."
+else
+    echo "Switchfin download\033[32m success\033[0m."
+    mkdir -p ./switch/Switchfin
+    mv Switchfin.nro ./switch/Switchfin
+fi
+
 ### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
@@ -664,9 +679,9 @@ else
 fi
 
 ### Delete unneeded files
-rm switch/haze.nro || true
-rm switch/reboot_to_hekate.nro || true
-rm switch/reboot_to_payload.nro || true
+rm -f switch/haze.nro
+rm -f switch/reboot_to_hekate.nro
+rm -f switch/reboot_to_payload.nro
 
 # -------------------------------------------
 

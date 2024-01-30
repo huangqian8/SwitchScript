@@ -7,7 +7,7 @@
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
     - [x] `Hekate + Nyx` [From Here](https://github.com/CTCaer/hekate/releases/latest)
       - [x] `Hekate + Nyx 简体汉化版` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
-    - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party/sigpatches.zip?08.22.2023)
+    - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party)
   - Payload插件
     - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [From Here](https://github.com/Decscots/Lockpick_RCM/releases/latest)
     - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/zdm65477730/TegraExplorer/releases/latest)
@@ -30,6 +30,7 @@
     - [x] 多工具合一任天堂Switch更新器 `aio-switch-updater` [From Here](https://github.com/HamletDuFromage/aio-switch-updater/releases/latest)
     - [x] 第三方B站客户端 `wiliwili` [From Here](https://github.com/xfangfang/wiliwili/releases/latest)
     - [x] Mod下载器 `SimpleModDownloader` [From Here](https://github.com/PoloNX/SimpleModDownloader/releases/latest)
+    - [x] Jellyfin客户端 `Switchfin` [From Here](https://github.com/dragonflylee/switchfin/releases/latest)
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - Tesla
@@ -67,7 +68,8 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
-- 2024-01-27 添加 `Hekate` 汉化，删除4个插件
+- 2024-01-30 添加 `Switchfin` 插件
+- 2024-01-27 添加 `Hekate` 汉化，删除4个 `Nro` 插件
 - 2024-01-25 更新 `Tesla` 仓库链接
 - 2024-01-24 添加 `sys-tune` 插件
 - 2024-01-19 添加 `aio-switch-updater`、`wiliwili`、`SimpleModDownloader` 插件
