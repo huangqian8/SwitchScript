@@ -12,9 +12,7 @@ on:
 
 env:
   SCRIPT_SH: switchScript.sh
-  UPLOAD_FIRMWARE: true
   TZ: Asia/Shanghai
-  KERNEL_VERSION: 6.1.10
 
 jobs:
   build:

@@ -565,7 +565,7 @@ debugmode_user=0
 disable_user_exception_handlers=0
 enable_user_pmu_access=0
 ; 控制真实系统启用隐身模式。
-blank_prodinfo_sysmmc=0
+blank_prodinfo_sysmmc=1
 ; 控制虚拟系统启用隐身模式。
 blank_prodinfo_emummc=1
 allow_writing_to_cal_sysmmc=0
