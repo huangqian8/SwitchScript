@@ -24,7 +24,8 @@ curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*atmosphere[^"]*.zip' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o atmosphere.zip
 if [ $? -ne 0 ]; then
     echo "atmosphere download\033[31m failed\033[0m."
@@ -36,7 +37,8 @@ fi
 
 ### Fetch latest fusee.bin from https://github.com/Atmosphere-NX/Atmosphere/releases/latest
 curl -sL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest \
-  | jq '.assets' | jq '.[1].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*fusee.bin"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o fusee.bin
 if [ $? -ne 0 ]; then
     echo "fusee download\033[31m failed\033[0m."
@@ -51,7 +53,8 @@ curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*hekate_ctcaer[^"]*.zip"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o hekate.zip
 if [ $? -ne 0 ]; then
     echo "Hekate + Nyx download\033[31m failed\033[0m."
@@ -97,7 +100,8 @@ curl -sL https://api.github.com/repos/Decscots/Lockpick_RCM/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo Lockpick_RCM {} >> ../description.txt
 curl -sL https://api.github.com/repos/Decscots/Lockpick_RCM/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Lockpick_RCM.bin"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o Lockpick_RCM.bin
 if [ $? -ne 0 ]; then
     echo "Lockpick_RCM download\033[31m failed\033[0m."
@@ -111,7 +115,8 @@ curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest 
   | jq '.tag_name' \
   | xargs -I {} echo TegraExplorer {} >> ../description.txt
 curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*TegraExplorer.bin"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o TegraExplorer.bin
 if [ $? -ne 0 ]; then
     echo "TegraExplorer download\033[31m failed\033[0m."
@@ -125,7 +130,8 @@ curl -sL https://api.github.com/repos/zdm65477730/CommonProblemResolver/releases
   | jq '.tag_name' \
   | xargs -I {} echo CommonProblemResolver {} >> ../description.txt
 curl -sL https://api.github.com/repos/zdm65477730/CommonProblemResolver/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*CommonProblemResolver.bin"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o CommonProblemResolver.bin
 if [ $? -ne 0 ]; then
     echo "CommonProblemResolver download\033[31m failed\033[0m."
@@ -149,7 +155,8 @@ curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
-  | jq '.assets' | jq '.[1].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*DBI.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o DBI.nro
 if [ $? -ne 0 ]; then
     echo "DBI download\033[31m failed\033[0m."
@@ -164,7 +171,8 @@ curl -sL https://api.github.com/repos/dragonflylee/Awoo-Installer/releases/lates
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/dragonflylee/Awoo-Installer/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Awoo-Installer.zip"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o Awoo-Installer.zip
 if [ $? -ne 0 ]; then
     echo "Awoo Installer download\033[31m failed\033[0m."
@@ -179,7 +187,8 @@ curl -sL https://api.github.com/repos/WerWolv/Hekate-Toolbox/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo HekateToolbox {} >> ../description.txt
 curl -sL https://api.github.com/repos/WerWolv/Hekate-Toolbox/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*HekateToolbox.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o HekateToolbox.nro
 if [ $? -ne 0 ]; then
     echo "HekateToolbox download\033[31m failed\033[0m."
@@ -204,7 +213,8 @@ curl -sL https://api.github.com/repos/exelix11/SwitchThemeInjector/releases/late
   | jq '.tag_name' \
   | xargs -I {} echo NXThemesInstaller {} >> ../description.txt
 curl -sL https://api.github.com/repos/exelix11/SwitchThemeInjector/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*NXThemesInstaller.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o NXThemesInstaller.nro
 if [ $? -ne 0 ]; then
     echo "NXThemesInstaller download\033[31m failed\033[0m."
@@ -219,7 +229,8 @@ curl -sL https://api.github.com/repos/J-D-K/JKSV/releases/latest \
   | jq '.name' \
   | xargs -I {} echo JKSV {} >> ../description.txt
 curl -sL https://api.github.com/repos/J-D-K/JKSV/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*JKSV.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o JKSV.nro
 if [ $? -ne 0 ]; then
     echo "JKSV download\033[31m failed\033[0m."
@@ -234,7 +245,8 @@ curl -sL https://api.github.com/repos/CaiMiao/Tencent-switcher-GUI/releases/late
   | jq '.tag_name' \
   | xargs -I {} echo tencent-switcher-gui {} >> ../description.txt
 curl -sL https://api.github.com/repos/CaiMiao/Tencent-switcher-GUI/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*tencent-switcher-gui.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o tencent-switcher-gui.nro
 if [ $? -ne 0 ]; then
     echo "tencent-switcher-gui download\033[31m failed\033[0m."
@@ -249,7 +261,8 @@ curl -sL https://api.github.com/repos/HamletDuFromage/aio-switch-updater/release
   | jq '.tag_name' \
   | xargs -I {} echo aio-switch-updater {} >> ../description.txt
 curl -sL https://api.github.com/repos/HamletDuFromage/aio-switch-updater/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*aio-switch-updater.zip"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o aio-switch-updater.zip
 if [ $? -ne 0 ]; then
     echo "aio-switch-updater download\033[31m failed\033[0m."
@@ -264,7 +277,8 @@ curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo wiliwili {} >> ../description.txt
 curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest \
-  | jq '.assets' | jq '.[7].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*wiliwili-NintendoSwitch.zip"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o wiliwili-NintendoSwitch.zip
 if [ $? -ne 0 ]; then
     echo "wiliwili download\033[31m failed\033[0m."
@@ -282,7 +296,8 @@ curl -sL https://api.github.com/repos/PoloNX/SimpleModDownloader/releases/latest
   | jq '.tag_name' \
   | xargs -I {} echo SimpleModDownloader {} >> ../description.txt
 curl -sL https://api.github.com/repos/PoloNX/SimpleModDownloader/releases/latest \
-  | jq '.assets' | jq '.[0].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*SimpleModDownloader.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o SimpleModDownloader.nro
 if [ $? -ne 0 ]; then
     echo "SimpleModDownloader download\033[31m failed\033[0m."
@@ -297,7 +312,8 @@ curl -sL https://api.github.com/repos/dragonflylee/switchfin/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo Switchfin {} >> ../description.txt
 curl -sL https://api.github.com/repos/dragonflylee/switchfin/releases/latest \
-  | jq '.assets' | jq '.[5].browser_download_url' \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Switchfin.nro"' \
+  | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o Switchfin.nro
 if [ $? -ne 0 ]; then
     echo "Switchfin download\033[31m failed\033[0m."
