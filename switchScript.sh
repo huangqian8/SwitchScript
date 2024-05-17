@@ -86,7 +86,7 @@ else
 fi
 
 ### Fetch latest SigPatches.zip
-curl -sL https://sigmapatches.coomer.party/sigpatches.zip?12.02.2023 -o sigpatches.zip
+curl -sL https://sigmapatches.su/sigpatches.zip?03.29.2024 -o sigpatches.zip
 if [ $? -ne 0 ]; then
     echo "SigPatches download\033[31m failed\033[0m."
 else
