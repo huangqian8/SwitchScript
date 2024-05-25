@@ -7,7 +7,7 @@
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
     - [x] `Hekate + Nyx` [From Here](https://github.com/CTCaer/hekate/releases/latest)
       - [x] `Hekate + Nyx 简体汉化版` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
-    - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party)
+    - [x] `SigPatches` [From Here](https://sigmapatches.su/)
   - Payload插件
     - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [From Here](https://github.com/Decscots/Lockpick_RCM/releases/latest)
     - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/zdm65477730/TegraExplorer/releases/latest)
@@ -31,6 +31,7 @@
     - [x] 第三方B站客户端 `wiliwili` [From Here](https://github.com/xfangfang/wiliwili/releases/latest)
     - [x] Mod下载器 `SimpleModDownloader` [From Here](https://github.com/PoloNX/SimpleModDownloader/releases/latest)
     - [x] Jellyfin客户端 `Switchfin` [From Here](https://github.com/dragonflylee/switchfin/releases/latest)
+    - [x] 串流工具 `Moonlight` [From Here](https://github.com/XITRIX/Moonlight-Switch/releases/latest)
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - Tesla
@@ -68,6 +69,7 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2024-05-25 更新 `sys-patch`，集成`Moonlight`
 - 2024-05-15 更新 `SigPatches`，修正部分游戏运行错误的情况
 - 2024-04-12 更新脚本，修正插件源更新造成的运行错误，增强脚本的稳定性
 - 2024-01-30 添加 `Switchfin` 插件

@@ -323,6 +323,22 @@ else
     mv Switchfin.nro ./switch/Switchfin
 fi
 
+### Fetch lastest Moonlight from https://github.com/XITRIX/Moonlight-Switch/releases/latest
+curl -sL https://api.github.com/repos/XITRIX/Moonlight-Switch/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Moonlight {} >> ../description.txt
+curl -sL https://api.github.com/repos/XITRIX/Moonlight-Switch/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Moonlight-Switch.nro"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o Moonlight-Switch.nro
+if [ $? -ne 0 ]; then
+    echo "Moonlight download\033[31m failed\033[0m."
+else
+    echo "Moonlight download\033[32m success\033[0m."
+    mkdir -p ./switch/Moonlight
+    mv Moonlight-Switch.nro ./switch/Moonlight
+fi
+
 ### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
