@@ -48,31 +48,20 @@ else
     mv fusee.bin ./bootloader/payloads
 fi
 
-### Fetch latest Hekate + Nyx from https://github.com/CTCaer/hekate/releases/latest
-curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
+### Fetch Hekate + Nyx CHS from https://api.github.com/repos/easyworld/hekate/releases/latest
+curl -sL https://api.github.com/repos/easyworld/hekate/releases/latest \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
-curl -sL https://api.github.com/repos/CTCaer/hekate/releases/latest \
-  | grep -oP '"browser_download_url": "\Khttps://[^"]*hekate_ctcaer[^"]*.zip"' \
+curl -sL https://api.github.com/repos/easyworld/hekate/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*hekate_ctcaer[^"]*_sc.zip"' \
   | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o hekate.zip
 if [ $? -ne 0 ]; then
-    echo "Hekate + Nyx download\033[31m failed\033[0m."
+    echo "Hekate + Nyx CHS download\033[31m failed\033[0m."
 else
-    echo "Hekate + Nyx download\033[32m success\033[0m."
+    echo "Hekate + Nyx CHS download\033[32m success\033[0m."
     unzip -oq hekate.zip
     rm hekate.zip
-fi
-
-### Fetch Nyx CHS
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/lang/nyx.zip -o nyx.zip
-if [ $? -ne 0 ]; then
-    echo "Nyx CHS download\033[31m failed\033[0m."
-else
-    echo "Nyx CHS download\033[32m success\033[0m."
-    mv ./bootloader/sys/nyx.bin ./bootloader/sys/nys-en.bin
-    unzip -oq nyx.zip
-    rm nyx.zip
 fi
 
 ### Fetch logo
@@ -83,16 +72,6 @@ else
     echo "logo download\033[32m success\033[0m."
     unzip -oq logo.zip
     rm logo.zip
-fi
-
-### Fetch latest SigPatches.zip
-curl -sL https://sigmapatches.su/sigpatches.zip?03.29.2024 -o sigpatches.zip
-if [ $? -ne 0 ]; then
-    echo "SigPatches download\033[31m failed\033[0m."
-else
-    echo "SigPatches download\033[32m success\033[0m."
-    unzip -oq sigpatches.zip
-    rm sigpatches.zip
 fi
 
 ### Fetch latest Lockpick_RCM.bin from https://github.com/Decscots/Lockpick_RCM/releases/latest
@@ -338,7 +317,6 @@ else
     mkdir -p ./switch/Moonlight
     mv Moonlight-Switch.nro ./switch/Moonlight
 fi
-
 ### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
@@ -395,6 +373,7 @@ QuickNTP
 Fizeau
 Zing
 sys-tune
+sys-patch
 ENDOFFILE
 
 ### Fetch EdiZon
@@ -508,12 +487,20 @@ else
 fi
 
 ### Fetch sys-patch
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sys-patch.zip -o sys-patch.zip
+curl -sL https://api.github.com/repos/impeeza/sys-patch/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo sys-patch {} >> ../description.txt
+curl -sL https://api.github.com/repos/impeeza/sys-patch/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*sys-patch[^"]*.zip"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o sys-patch-zip.zip
 if [ $? -ne 0 ]; then
     echo "sys-patch download\033[31m failed\033[0m."
 else
     echo "sys-patch download\033[32m success\033[0m."
+    unzip -oq sys-patch-zip.zip
     unzip -oq sys-patch.zip
+    rm sys-patch-zip.zip
     rm sys-patch.zip
 fi
 
@@ -532,7 +519,6 @@ QuickNTP
 Fizeau
 Zing
 sys-tune
-sys-patch
 ENDOFFILE
 
 ### Rename hekate_ctcaer_*.bin to payload.bin
