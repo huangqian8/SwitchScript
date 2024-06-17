@@ -3,18 +3,15 @@
 ## 功能如下：
 
 - 下载最新：
-  - 大气层三件套
+  - 大气层两件套
     - [x] `Atmosphere + Fusee` [From Here](https://github.com/Atmosphere-NX/Atmosphere/releases/latest)
-    - [x] `Hekate + Nyx` [From Here](https://github.com/CTCaer/hekate/releases/latest)
-      - [x] `Hekate + Nyx 简体汉化版` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
-    - [x] `SigPatches` [From Here](https://sigmapatches.coomer.party)
+    - [x] `Hekate + Nyx 简体中文` [From Here](https://github.com/easyworld/hekate/releases)
   - Payload插件
     - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [From Here](https://github.com/Decscots/Lockpick_RCM/releases/latest)
     - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/zdm65477730/TegraExplorer/releases/latest)
     - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [From Here](https://github.com/zdm65477730/CommonProblemResolver/releases/latest)
   - Nro插件
     - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester.nro` [From Here](https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest)
-    - [ ] 游戏存档管理工具 `Checkpoint` [From Here](https://github.com/BernardoGiordano/Checkpoint/releases/latest)
     - [x] 游戏安装，存档管理和文件传输工具 `DBI` [From Here](https://github.com/rashevskyv/dbi/releases/latest)
     - [x] 游戏安装和文件传输工具 `Awoo Installer` [From Here](https://github.com/dragonflylee/Awoo-Installer/releases/latest)
     - [x] 深海工具箱 `Hekate-toolbox` [From Here](https://github.com/WerWolv/Hekate-Toolbox/releases/latest)
@@ -22,15 +19,11 @@
     - [x] 主题安装工具 `NXThemesInstaller` [From Here](https://github.com/exelix11/SwitchThemeInjector/releases/latest)
     - [x] 游戏存档管理工具 `JKSV` [From Here](https://github.com/J-D-K/JKSV/releases/latest)
     - [x] 系统切换工具 `tencent-switcher-gui` [From Here](https://github.com/CaiMiao/Tencent-switcher-GUI/releases/latest)
-    - [ ] 金手指工具 `Breeze` [From Here](https://github.com/tomvita/Breeze-Beta/releases/latest)
-    - [ ] SigPatches更新工具 `Sigpatch-Updater` [From Here](https://github.com/ITotalJustice/sigpatch-updater/releases/latest)
-    - [ ] 大气层三件套更新工具 `AtmoPackUpdater` [From Here](https://github.com/PoloNX/AtmoPackUpdater/releases/latest)
-    - [ ] 时间调整工具 `SwitchTime` [From Here](https://github.com/3096/switch-time/releases/latest)
-    - [ ] 极限超频插件 `Atmosphere-OC-Suite` [From Here](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest)
     - [x] 多工具合一任天堂Switch更新器 `aio-switch-updater` [From Here](https://github.com/HamletDuFromage/aio-switch-updater/releases/latest)
     - [x] 第三方B站客户端 `wiliwili` [From Here](https://github.com/xfangfang/wiliwili/releases/latest)
     - [x] Mod下载器 `SimpleModDownloader` [From Here](https://github.com/PoloNX/SimpleModDownloader/releases/latest)
     - [x] Jellyfin客户端 `Switchfin` [From Here](https://github.com/dragonflylee/switchfin/releases/latest)
+    - [x] 串流工具 `Moonlight` [From Here](https://github.com/XITRIX/Moonlight-Switch/releases/latest)
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - Tesla
@@ -48,7 +41,7 @@
     - [x] 色彩调整 `Fizeau` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
     - [x] 金手指工具 `Zing` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
     - [x] 后台音乐 `sys-tune` [From Here](https://www.tekqart.com/thread-370954-1-1.html)
-    - [x] 系统补丁 `sys-patch` [From Here](https://www.tekqart.com/thread-370955-1-1.html)
+    - [x] 系统补丁 `sys-patch` [From Here](https://github.com/impeeza/sys-patch/releases/latest)
 
 - 文件操作：
     - [x] 移动 `fusee.bin` 至 `bootloader/payloads` 文件夹
@@ -68,6 +61,8 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2024-06-16 更新 `Hekate + Nyx`、 `sys-patch` 仓库链接，去除 `sigpatches`
+- 2024-05-25 更新 `sys-patch`，集成`Moonlight`
 - 2024-05-15 更新 `SigPatches`，修正部分游戏运行错误的情况
 - 2024-04-12 更新脚本，修正插件源更新造成的运行错误，增强脚本的稳定性
 - 2024-01-30 添加 `Switchfin` 插件
