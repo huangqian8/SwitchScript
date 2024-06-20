@@ -549,7 +549,7 @@ payload=bootloader/payloads/fusee.bin
 [CFW (emuMMC)]
 emummcforce=1
 fss0=atmosphere/package3
-kip1patch=nosigchk
+; kip1patch=nosigchk
 atmosphere=1
 icon=bootloader/res/icon_Atmosphere_emunand.bmp
 id=cfw-emu
@@ -557,7 +557,7 @@ id=cfw-emu
 [CFW (sysMMC)]
 emummc_force_disable=1
 fss0=atmosphere/package3
-kip1patch=nosigchk
+; kip1patch=nosigchk
 atmosphere=1
 icon=bootloader/res/icon_Atmosphere_sysnand.bmp
 id=cfw-sys
