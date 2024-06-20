@@ -317,6 +317,17 @@ else
     mkdir -p ./switch/Moonlight
     mv Moonlight-Switch.nro ./switch/Moonlight
 fi
+
+### Fetch NX-Shell
+curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/NX-Shell.zip -o NX-Shell.zip
+if [ $? -ne 0 ]; then
+    echo "NX-Shell download\033[31m failed\033[0m."
+else
+    echo "NX-Shell download\033[32m success\033[0m."
+    unzip -oq NX-Shell.zip
+    rm NX-Shell.zip
+fi
+
 ### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
@@ -549,7 +560,7 @@ payload=bootloader/payloads/fusee.bin
 [CFW (emuMMC)]
 emummcforce=1
 fss0=atmosphere/package3
-kip1patch=nosigchk
+; kip1patch=nosigchk
 atmosphere=1
 icon=bootloader/res/icon_Atmosphere_emunand.bmp
 id=cfw-emu
@@ -557,7 +568,7 @@ id=cfw-emu
 [CFW (sysMMC)]
 emummc_force_disable=1
 fss0=atmosphere/package3
-kip1patch=nosigchk
+; kip1patch=nosigchk
 atmosphere=1
 icon=bootloader/res/icon_Atmosphere_sysnand.bmp
 id=cfw-sys
