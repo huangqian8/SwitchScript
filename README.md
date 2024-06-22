@@ -44,6 +44,8 @@
     - [x] 金手指工具 `Zing` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
     - [x] 后台音乐 `sys-tune` [From Here](https://www.tekqart.com/thread-370954-1-1.html)
     - [x] 系统补丁 `sys-patch` [From Here](https://github.com/impeeza/sys-patch/releases/latest)
+  - 其他
+    - [x] 蓝牙手柄插件 `MissionControl` [From Here](https://github.com/ndeadly/MissionControl/releases/latest)
 
 - 文件操作：
     - [x] 移动 `fusee.bin` 至 `bootloader/payloads` 文件夹
@@ -54,8 +56,8 @@
     - [x] 在根目录中创建 `boot.ini`
     - [x] 在 `atmosphere/config` 文件夹中创建 `override_config.ini`
     - [x] 在 `atmosphere/config` 文件夹中创建 `system_settings.ini`
-    - [x] 删除 `switch` 文件夹中 `haze.nro`  
-    - [x] 删除 `switch` 文件夹中 `reboot_to_hekate.nro`  
+    - [x] 删除 `switch` 文件夹中 `haze.nro`
+    - [x] 删除 `switch` 文件夹中 `reboot_to_hekate.nro`
     - [x] 删除 `switch` 文件夹中 `reboot_to_payload.nro`
 
 ## 使用说明（仅适用于 `Linux` ，科学上网环境）:
@@ -63,7 +65,7 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
-- 2024-06-22 添加 `sigpatches`
+- 2024-06-22 添加 `sigpatches`、`MissionControl`
 - 2024-06-20 更新 `hekate_ipl.ini` 修正启动时 `nosigchk` 报错；集成 `NX-Shell`
 - 2024-06-16 更新 `Hekate + Nyx`、 `sys-patch` 仓库链接，去除 `sigpatches`
 - 2024-05-25 更新 `sys-patch`，集成`Moonlight`
