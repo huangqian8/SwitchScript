@@ -26,6 +26,8 @@
     - [x] Jellyfin客户端 `Switchfin` [From Here](https://github.com/dragonflylee/switchfin/releases/latest)
     - [x] 串流工具 `Moonlight` [From Here](https://github.com/XITRIX/Moonlight-Switch/releases/latest)
     - [x] 文件管理 `NX-Shell` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
+    - [x] 黑商店 `hb-appstore`  [From Here](https://github.com/fortheusers/hb-appstore/releases/latest)
+
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
   - Tesla
@@ -65,9 +67,10 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
-- 2024-06-22 添加 `sigpatches`、`MissionControl`
+- 2024-06-29 添加 `hb-appstore`
+- 2024-06-22 添加 `SigPatches`、`MissionControl`
 - 2024-06-20 更新 `hekate_ipl.ini` 修正启动时 `nosigchk` 报错；集成 `NX-Shell`
-- 2024-06-16 更新 `Hekate + Nyx`、 `sys-patch` 仓库链接，去除 `sigpatches`
+- 2024-06-16 更新 `Hekate + Nyx`、 `sys-patch` 仓库链接，去除 `SigPatches`
 - 2024-05-25 更新 `sys-patch`，集成`Moonlight`
 - 2024-05-15 更新 `SigPatches`，修正部分游戏运行错误的情况
 - 2024-04-12 更新脚本，修正插件源更新造成的运行错误，增强脚本的稳定性

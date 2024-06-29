@@ -334,8 +334,25 @@ if [ $? -ne 0 ]; then
     echo "NX-Shell download\033[31m failed\033[0m."
 else
     echo "NX-Shell download\033[32m success\033[0m."
+    echo NX-Shell >> ../description.txt
     unzip -oq NX-Shell.zip
     rm NX-Shell.zip
+fi
+
+### Fetch lastest hb-appstore from https://github.com/fortheusers/hb-appstore/releases/latest
+curl -sL https://api.github.com/repos/fortheusers/hb-appstore/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo hb-appstore {} >> ../description.txt
+curl -sL https://api.github.com/repos/fortheusers/hb-appstore/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*appstore.nro"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o appstore.nro
+if [ $? -ne 0 ]; then
+    echo "hb-appstore download\033[31m failed\033[0m."
+else
+    echo "hb-appstore download\033[32m success\033[0m."
+    mkdir -p ./switch/HB-App-Store
+    mv appstore.nro ./switch/HB-App-Store
 fi
 
 ### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
