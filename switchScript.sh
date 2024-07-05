@@ -70,6 +70,7 @@ if [ $? -ne 0 ]; then
     echo "sigpatches download\033[31m failed\033[0m."
 else
     echo "sigpatches download\033[32m success\033[0m."
+    echo sigpatches >> ../description.txt
     unzip -oq sigpatches.zip
     rm sigpatches.zip
 fi
@@ -135,6 +136,7 @@ if [ $? -ne 0 ]; then
     echo "Switch_90DNS_tester download\033[31m failed\033[0m."
 else
     echo "Switch_90DNS_tester download\033[32m success\033[0m."
+    echo Switch_90DNS_tester >> ../description.txt
     unzip -oq Switch_90DNS_tester.zip
     rm Switch_90DNS_tester.zip
 fi
@@ -193,6 +195,7 @@ if [ $? -ne 0 ]; then
     echo "NX-Activity-Log download\033[31m failed\033[0m."
 else
     echo "NX-Activity-Log download\033[32m success\033[0m."
+    echo NX-Activity-Log >> ../description.txt
     unzip -oq NX-Activity-Log.zip
     rm NX-Activity-Log.zip
 fi
