@@ -27,6 +27,7 @@
     - [x] 串流工具 `Moonlight` [From Here](https://github.com/XITRIX/Moonlight-Switch/releases/latest)
     - [x] 文件管理 `NX-Shell` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
     - [x] 黑商店 `hb-appstore`  [From Here](https://github.com/fortheusers/hb-appstore/releases/latest)
+    - [x] 系统升级工具 `daybreak`  [From Here](https://www.tekqart.com/thread-258184-1-1.html)
 
   - 补丁
     - [x] 主题破解 `theme-patches` [From Here](https://github.com/exelix11/theme-patches)
@@ -67,6 +68,7 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2024-07-06 更新 `daybreak` 为汉化版
 - 2024-06-29 添加 `hb-appstore`
 - 2024-06-22 添加 `SigPatches`、`MissionControl`
 - 2024-06-20 更新 `hekate_ipl.ini` 修正启动时 `nosigchk` 报错；集成 `NX-Shell`

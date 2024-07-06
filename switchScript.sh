@@ -358,6 +358,16 @@ else
     mv appstore.nro ./switch/HB-App-Store
 fi
 
+### Fetch daybreak
+curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/daybreak_x.zip -o daybreak_x.zip
+if [ $? -ne 0 ]; then
+    echo "daybreak download\033[31m failed\033[0m."
+else
+    echo "daybreak download\033[32m success\033[0m."
+    unzip -oq daybreak_x.zip
+    rm daybreak_x.zip
+fi
+
 ### Fetch lastest theme-patches from https://github.com/exelix11/theme-patches
 git clone https://github.com/exelix11/theme-patches
 if [ $? -ne 0 ]; then
@@ -757,6 +767,7 @@ fi
 rm -f switch/haze.nro
 rm -f switch/reboot_to_hekate.nro
 rm -f switch/reboot_to_payload.nro
+rm -f switch/daybreak.nro
 
 # -------------------------------------------
 
