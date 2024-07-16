@@ -7,7 +7,7 @@ set -e
 
 # -------------------------------------------
 
-### Create a new folder for storing files
+### Create a few new folders for storing files
 if [ -d SwitchSD ]; then
   rm -rf SwitchSD
 fi
@@ -16,7 +16,29 @@ if [ -e description.txt ]; then
 fi
 mkdir -p ./SwitchSD/atmosphere/config
 mkdir -p ./SwitchSD/atmosphere/hosts
+mkdir -p ./SwitchSD/atmosphere/contents/420000000007E51Anx-ovlloader
+mkdir -p ./SwitchSD/atmosphere/contents/0000000000534C56ReverseNX-RT
+mkdir -p ./SwitchSD/atmosphere/contents/4200000000000010ldn_mitm
+mkdir -p ./SwitchSD/atmosphere/contents/0100000000000352emuiibo
+mkdir -p ./SwitchSD/atmosphere/contents/0100000000000F12Fizeau
+mkdir -p ./SwitchSD/atmosphere/contents/4200000000000000sys-tune
+mkdir -p ./SwitchSD/atmosphere/contents/420000000000000Bsys-patch
+mkdir -p ./SwitchSD/atmosphere/contents/010000000000bd00MissionControl
+mkdir -p ./SwitchSD/bootloader/payloads
 mkdir -p ./SwitchSD/config/tesla
+mkdir -p ./SwitchSD/config/ultrahand/lang/
+mkdir -p ./SwitchSD/switch/DBI
+mkdir -p ./SwitchSD/switch/HB-App-Store
+mkdir -p ./SwitchSD/switch/HekateToolbox
+mkdir -p ./SwitchSD/switch/JKSV
+mkdir -p ./SwitchSD/switch/Moonlight
+mkdir -p ./SwitchSD/switch/NXThemesInstaller
+mkdir -p ./SwitchSD/switch/SimpleModDownloader
+mkdir -p ./SwitchSD/switch/Switchfin
+mkdir -p ./SwitchSD/switch/tencent-switcher-gui
+mkdir -p ./SwitchSD/switch/wiliwili
+mkdir -p ./SwitchSD/switch/.overlays
+
 cd SwitchSD
 
 ### Fetch latest atmosphere from https://github.com/Atmosphere-NX/Atmosphere/releases/latest
@@ -44,7 +66,6 @@ if [ $? -ne 0 ]; then
     echo "fusee download\033[31m failed\033[0m."
 else
     echo "fusee download\033[32m success\033[0m."
-    mkdir -p ./bootloader/payloads
     mv fusee.bin ./bootloader/payloads
 fi
 
@@ -100,7 +121,7 @@ else
     mv Lockpick_RCM.bin ./bootloader/payloads
 fi
 
-### Fetch latest TegraExplorer.bin form https://github.com/zdm65477730/TegraExplorer/releases
+### Fetch latest TegraExplorer.bin form https://github.com/zdm65477730/TegraExplorer/releases/latest
 curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo TegraExplorer {} >> ../description.txt
@@ -115,7 +136,7 @@ else
     mv TegraExplorer.bin ./bootloader/payloads
 fi
 
-### Fetch latest CommonProblemResolver.bin form https://github.com/zdm65477730/CommonProblemResolver/releases
+### Fetch latest CommonProblemResolver.bin form https://github.com/zdm65477730/CommonProblemResolver/releases/latest
 curl -sL https://api.github.com/repos/zdm65477730/CommonProblemResolver/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo CommonProblemResolver {} >> ../description.txt
@@ -153,7 +174,6 @@ if [ $? -ne 0 ]; then
     echo "DBI download\033[31m failed\033[0m."
 else
     echo "DBI download\033[32m success\033[0m."
-    mkdir -p ./switch/DBI
     mv DBI.nro ./switch/DBI
 fi
 
@@ -185,7 +205,6 @@ if [ $? -ne 0 ]; then
     echo "HekateToolbox download\033[31m failed\033[0m."
 else
     echo "HekateToolbox download\033[32m success\033[0m."
-    mkdir -p ./switch/HekateToolbox
     mv HekateToolbox.nro ./switch/HekateToolbox
 fi
 
@@ -212,7 +231,6 @@ if [ $? -ne 0 ]; then
     echo "NXThemesInstaller download\033[31m failed\033[0m."
 else
     echo "NXThemesInstaller download\033[32m success\033[0m."
-    mkdir -p ./switch/NXThemesInstaller
     mv NXThemesInstaller.nro ./switch/NXThemesInstaller
 fi
 
@@ -228,7 +246,6 @@ if [ $? -ne 0 ]; then
     echo "JKSV download\033[31m failed\033[0m."
 else
     echo "JKSV download\033[32m success\033[0m."
-    mkdir -p ./switch/JKSV
     mv JKSV.nro ./switch/JKSV
 fi
 
@@ -244,7 +261,6 @@ if [ $? -ne 0 ]; then
     echo "tencent-switcher-gui download\033[31m failed\033[0m."
 else
     echo "tencent-switcher-gui download\033[32m success\033[0m."
-    mkdir -p ./switch/tencent-switcher-gui
     mv tencent-switcher-gui.nro ./switch/tencent-switcher-gui
 fi
 
@@ -277,7 +293,6 @@ if [ $? -ne 0 ]; then
 else
     echo "wiliwili download\033[32m success\033[0m."
     unzip -oq wiliwili-NintendoSwitch.zip
-    mkdir -p ./switch/wiliwili
     mv wiliwili/wiliwili.nro ./switch/wiliwili
     rm -rf wiliwili
     rm wiliwili-NintendoSwitch.zip
@@ -295,14 +310,13 @@ if [ $? -ne 0 ]; then
     echo "SimpleModDownloader download\033[31m failed\033[0m."
 else
     echo "SimpleModDownloader download\033[32m success\033[0m."
-    mkdir -p ./switch/SimpleModDownloader
     mv SimpleModDownloader.nro ./switch/SimpleModDownloader
 fi
 
 ### Fetch lastest Switchfin from https://github.com/dragonflylee/switchfin/releases/latest
 curl -sL https://api.github.com/repos/dragonflylee/switchfin/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo Switchfin {} >> ../description.txt
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/dragonflylee/switchfin/releases/latest \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*Switchfin.nro"' \
   | sed 's/"//g' \
@@ -311,7 +325,6 @@ if [ $? -ne 0 ]; then
     echo "Switchfin download\033[31m failed\033[0m."
 else
     echo "Switchfin download\033[32m success\033[0m."
-    mkdir -p ./switch/Switchfin
     mv Switchfin.nro ./switch/Switchfin
 fi
 
@@ -327,7 +340,6 @@ if [ $? -ne 0 ]; then
     echo "Moonlight download\033[31m failed\033[0m."
 else
     echo "Moonlight download\033[32m success\033[0m."
-    mkdir -p ./switch/Moonlight
     mv Moonlight-Switch.nro ./switch/Moonlight
 fi
 
@@ -344,8 +356,8 @@ fi
 
 ### Fetch lastest hb-appstore from https://github.com/fortheusers/hb-appstore/releases/latest
 curl -sL https://api.github.com/repos/fortheusers/hb-appstore/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo hb-appstore {} >> ../description.txt
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/fortheusers/hb-appstore/releases/latest \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*appstore.nro"' \
   | sed 's/"//g' \
@@ -354,11 +366,10 @@ if [ $? -ne 0 ]; then
     echo "hb-appstore download\033[31m failed\033[0m."
 else
     echo "hb-appstore download\033[32m success\033[0m."
-    mkdir -p ./switch/HB-App-Store
     mv appstore.nro ./switch/HB-App-Store
 fi
 
-### Fetch daybreak
+### Fetch daybreak_x
 curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/daybreak_x.zip -o daybreak_x.zip
 if [ $? -ne 0 ]; then
     echo "daybreak download\033[31m failed\033[0m."
@@ -389,43 +400,26 @@ else
     rm nx-ovlloader.zip
 fi
 
-### Write config.ini in /config/tesla
-cat > ./config/tesla/config.ini << ENDOFFILE
-[tesla]
-; 特斯拉自定义快捷键。
-key_combo=L+ZL+R
-ENDOFFILE
+### Fetch lastest Ultrahand-Overlay from https://github.com/ppkantorski/Ultrahand-Overlay/releases/latest
+curl -sL https://api.github.com/repos/ppkantorski/Ultrahand-Overlay/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
+curl -sL https://api.github.com/repos/ppkantorski/Ultrahand-Overlay/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*lang.zip"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o lang.zip
+curl -sL https://api.github.com/repos/ppkantorski/Ultrahand-Overlay/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*ovlmenu.ovl"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o ovlmenu.ovl
 if [ $? -ne 0 ]; then
-    echo "Writing config.ini in ./config/tesla\033[31m failed\033[0m."
+    echo "Ultrahand-Overlay download\033[31m failed\033[0m."
 else
-    echo "Writing config.ini in ./config/tesla\033[32m success\033[0m."
+    echo "Ultrahand-Overlay download\033[32m success\033[0m."
+    unzip -oq lang.zip -d ./config/ultrahand/lang/
+    mv ovlmenu.ovl ./switch/.overlays
+    rm lang.zip
 fi
-
-### Fetch Tesla-Menu
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/Tesla-Menu.zip -o Tesla-Menu.zip
-if [ $? -ne 0 ]; then
-    echo "Tesla-Menu download\033[31m failed\033[0m."
-else
-    echo "Tesla-Menu download\033[32m success\033[0m."
-    unzip -oq Tesla-Menu.zip
-    rm Tesla-Menu.zip
-fi
-
-### Write sort.cfg in /config/Tesla-Menu/sort.cfg
-cat > ./config/Tesla-Menu/sort.cfg << ENDOFFILE
-EdiZon
-ovl-sysmodules
-StatusMonitor
-sys-clk-overlay
-ReverseNX-RT
-ldn_mitm
-emuiibo
-QuickNTP
-Fizeau
-Zing
-sys-tune
-sys-patch
-ENDOFFILE
 
 ### Fetch EdiZon
 curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/EdiZon.zip -o EdiZon.zip
@@ -455,16 +449,6 @@ else
     echo "StatusMonitor download\033[32m success\033[0m."
     unzip -oq StatusMonitor.zip
     rm StatusMonitor.zip
-fi
-
-### Fetch sys-clk
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sys-clk.zip -o sys-clk.zip
-if [ $? -ne 0 ]; then
-    echo "sys-clk download\033[31m failed\033[0m."
-else
-    echo "sys-clk download\033[32m success\033[0m."
-    unzip -oq sys-clk.zip
-    rm sys-clk.zip
 fi
 
 ### Fetch ReverseNX-RT
@@ -527,8 +511,14 @@ else
     rm Zing.zip
 fi
 
-### Fetch sys-tune
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sys-tune.zip -o sys-tune.zip
+### Fetch lastest sys-tune from https://github.com/HookedBehemoth/sys-tune/releases/latest
+curl -sL https://api.github.com/repos/HookedBehemoth/sys-tune/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
+curl -sL https://api.github.com/repos/HookedBehemoth/sys-tune/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*sys-tune[^"]*.zip"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o sys-tune.zip
 if [ $? -ne 0 ]; then
     echo "sys-tune download\033[31m failed\033[0m."
 else
@@ -540,18 +530,15 @@ fi
 ###
 cat >> ../description.txt << ENDOFFILE
 nx-ovlloader
-Tesla-Menu
 EdiZon
 ovl-sysmodules
 StatusMonitor
-sys-clk
 ReverseNX-RT
 ldn_mitm
 emuiibo
 QuickNTP
 Fizeau
 Zing
-sys-tune
 ENDOFFILE
 
 ### Fetch sys-patch
@@ -574,8 +561,8 @@ fi
 
 ### Fetch MissionControl
 curl -sL https://api.github.com/repos/ndeadly/MissionControl/releases/latest \
-  | jq '.tag_name' \
-  | xargs -I {} echo MissionControl {} >> ../description.txt
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
 curl -sL https://api.github.com/repos/ndeadly/MissionControl/releases/latest \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*MissionControl[^"]*.zip"' \
   | sed 's/"//g' \
@@ -702,7 +689,7 @@ fi
 
 ### Write override_config.ini in /atmosphere/config
 cat > ./atmosphere/config/override_config.ini << ENDOFFILE
-[hbl_config] 
+[hbl_config]
 program_id_0=010000000000100D
 override_address_space=39_bit
 ; 按住R键点击相册进入HBL自制软件界面。
@@ -765,7 +752,6 @@ fi
 
 ### Delete unneeded files
 rm -f switch/haze.nro
-rm -f switch/reboot_to_hekate.nro
 rm -f switch/reboot_to_payload.nro
 rm -f switch/daybreak.nro
 
