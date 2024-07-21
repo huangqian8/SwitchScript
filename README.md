@@ -9,10 +9,10 @@
     - [x] `Sigpatches` [From Here](https://hackintendo.com/download/sigpatches/)
   - Payload插件
     - [x] 主机系统的密钥提取工具 `Lockpick_RCM` [From Here](https://github.com/Decscots/Lockpick_RCM/releases/latest)
-    - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/zdm65477730/TegraExplorer/releases/latest)
+    - [x] Hekate下的文件管理工具 `TegraExplorer` [From Here](https://github.com/suchmememanyskill/TegraExplorer/releases/latest)
     - [x] Hekate下删除主题和关闭插件自动启动 `CommonProblemResolver` [From Here](https://github.com/zdm65477730/CommonProblemResolver/releases/latest)
   - Nro插件
-    - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
+    - [x] 联网检测是否屏蔽任天堂服务器 `Switch_90DNS_tester` [From Here](https://github.com/meganukebmp/Switch_90DNS_tester/releases/latest)
     - [x] 游戏安装，存档管理和文件传输工具 `DBI` [From Here](https://github.com/rashevskyv/dbi/releases/latest)
     - [x] 游戏安装和文件传输工具 `Awoo Installer` [From Here](https://github.com/dragonflylee/Awoo-Installer/releases/latest)
     - [x] 深海工具箱 `Hekate-toolbox` [From Here](https://github.com/WerWolv/Hekate-Toolbox/releases/latest)
@@ -46,6 +46,9 @@
     - [x] 金手指工具 `Zing` [From Here](https://www.tekqart.com/thread-222735-1-1.html)
     - [x] 后台音乐 `sys-tune` [From Here](https://www.tekqart.com/thread-370954-1-1.html)
     - [x] 系统补丁 `sys-patch` [From Here](https://github.com/impeeza/sys-patch/releases/latest)
+    - [x] 超频插件 `sys-clk` [From Here](https://github.com/retronx-team/sys-clk/releases/latest)
+    - [x] 调频插件 `OC Toolkit` [From Here](https://github.com/halop/OC_Toolkit/releases/latest)
+
   - 其他
     - [x] 蓝牙手柄插件 `MissionControl` [From Here](https://github.com/ndeadly/MissionControl/releases/latest)
 
@@ -67,12 +70,13 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2024-07-21 添加 `sys-clk`、`OC Toolkit`
 - 2024-07-16 更新脚本，替换 `Tesla-Menu` 为 `Ultrahand-Overlay`，去除 `sys-clk`
 - 2024-07-06 更新 `daybreak` 为汉化版
 - 2024-06-29 添加 `hb-appstore`
 - 2024-06-22 添加 `SigPatches`、`MissionControl`
 - 2024-06-20 更新 `hekate_ipl.ini` 修正启动时 `nosigchk` 报错；集成 `NX-Shell`
-- 2024-06-16 更新 `Hekate + Nyx`、 `sys-patch` 仓库链接，去除 `SigPatches`
+- 2024-06-16 更新 `Hekate + Nyx`、`sys-patch` 仓库链接，去除 `SigPatches`
 - 2024-05-25 更新 `sys-patch`，集成`Moonlight`
 - 2024-05-15 更新 `SigPatches`，修正部分游戏运行错误的情况
 - 2024-04-12 更新脚本，修正插件源更新造成的运行错误，增强脚本的稳定性

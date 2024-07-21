@@ -24,9 +24,11 @@ mkdir -p ./SwitchSD/atmosphere/contents/0100000000000F12Fizeau
 mkdir -p ./SwitchSD/atmosphere/contents/4200000000000000sys-tune
 mkdir -p ./SwitchSD/atmosphere/contents/420000000000000Bsys-patch
 mkdir -p ./SwitchSD/atmosphere/contents/010000000000bd00MissionControl
+mkdir -p ./SwitchSD/atmosphere/contents/00FF0000636C6BFFsys-clk
+mkdir -p ./SwitchSD/atmosphere/kips
 mkdir -p ./SwitchSD/bootloader/payloads
-mkdir -p ./SwitchSD/config/tesla
-mkdir -p ./SwitchSD/config/ultrahand/lang/
+mkdir -p ./SwitchSD/config/ultrahand/lang
+mkdir -p ./SwitchSD/switch/Switch_90DNS_tester
 mkdir -p ./SwitchSD/switch/DBI
 mkdir -p ./SwitchSD/switch/HB-App-Store
 mkdir -p ./SwitchSD/switch/HekateToolbox
@@ -38,6 +40,7 @@ mkdir -p ./SwitchSD/switch/Switchfin
 mkdir -p ./SwitchSD/switch/tencent-switcher-gui
 mkdir -p ./SwitchSD/switch/wiliwili
 mkdir -p ./SwitchSD/switch/.overlays
+mkdir -p ./SwitchSD/switch/.packages
 
 cd SwitchSD
 
@@ -121,11 +124,11 @@ else
     mv Lockpick_RCM.bin ./bootloader/payloads
 fi
 
-### Fetch latest TegraExplorer.bin form https://github.com/zdm65477730/TegraExplorer/releases/latest
-curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
+### Fetch latest TegraExplorer.bin form https://github.com/suchmememanyskill/TegraExplorer/releases/latest
+curl -sL https://api.github.com/repos/suchmememanyskill/TegraExplorer/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo TegraExplorer {} >> ../description.txt
-curl -sL https://api.github.com/repos/zdm65477730/TegraExplorer/releases/latest \
+curl -sL https://api.github.com/repos/suchmememanyskill/TegraExplorer/releases/latest \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*TegraExplorer.bin"' \
   | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o TegraExplorer.bin
@@ -152,14 +155,18 @@ else
 fi
 
 ### Fetch lastest Switch_90DNS_tester
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/Switch_90DNS_tester.zip -o Switch_90DNS_tester.zip
+curl -sL https://api.github.com/repos/meganukebmp/Switch_90DNS_tester/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Switch_90DNS_tester {} >> ../description.txt
+curl -sL https://api.github.com/repos/meganukebmp/Switch_90DNS_tester/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Switch_90DNS_tester.nro"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o Switch_90DNS_tester.nro
 if [ $? -ne 0 ]; then
     echo "Switch_90DNS_tester download\033[31m failed\033[0m."
 else
     echo "Switch_90DNS_tester download\033[32m success\033[0m."
-    echo Switch_90DNS_tester >> ../description.txt
-    unzip -oq Switch_90DNS_tester.zip
-    rm Switch_90DNS_tester.zip
+    mv Switch_90DNS_tester.nro ./switch/Switch_90DNS_tester
 fi
 
 ### Fetch lastest DBI from https://github.com/rashevskyv/dbi/releases/latest
@@ -541,7 +548,7 @@ Fizeau
 Zing
 ENDOFFILE
 
-### Fetch sys-patch
+### Fetch sys-patch from https://github.com/impeeza/sys-patch/releases/latest
 curl -sL https://api.github.com/repos/impeeza/sys-patch/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo sys-patch {} >> ../description.txt
@@ -559,7 +566,46 @@ else
     rm sys-patch.zip
 fi
 
-### Fetch MissionControl
+### Fetch sys-clk from https://github.com/retronx-team/sys-clk/releases/latest
+curl -sL https://api.github.com/repos/retronx-team/sys-clk/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo sys-clk {} >> ../description.txt
+curl -sL https://api.github.com/repos/retronx-team/sys-clk/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*sys-clk[^"]*.zip"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o sys-clk.zip
+if [ $? -ne 0 ]; then
+    echo "sys-clk download\033[31m failed\033[0m."
+else
+    echo "sys-clk download\033[32m success\033[0m."
+    unzip -oq sys-clk.zip
+    rm sys-clk.zip
+    rm README.md
+fi
+
+### Fetch lastest OC_Toolkit from https://github.com/halop/OC_Toolkit/releases/latest
+curl -sL https://api.github.com/repos/halop/OC_Toolkit/releases/latest \
+  | jq '.name' \
+  | xargs -I {} echo {} >> ../description.txt
+curl -sL https://api.github.com/repos/halop/OC_Toolkit/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*kip.zip"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o kip.zip
+curl -sL https://api.github.com/repos/halop/OC_Toolkit/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*OC.Toolkit.u.zip"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o OC.Toolkit.u.zip
+if [ $? -ne 0 ]; then
+    echo "OC_Toolkit download\033[31m failed\033[0m."
+else
+    echo "OC_Toolkit download\033[32m success\033[0m."
+    unzip -oq kip.zip -d ./atmosphere/kips/
+    unzip -oq OC.Toolkit.u.zip -d ./switch/.packages/
+    rm kip.zip
+    rm OC.Toolkit.u.zip
+fi
+
+### Fetch MissionControl from https://github.com/ndeadly/MissionControl/releases/latest
 curl -sL https://api.github.com/repos/ndeadly/MissionControl/releases/latest \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
@@ -604,6 +650,7 @@ payload=bootloader/payloads/fusee.bin
 emummcforce=1
 fss0=atmosphere/package3
 kip1patch=nosigchk
+kip1=atmosphere/kips/loader.kip
 atmosphere=1
 icon=bootloader/res/icon_Atmosphere_emunand.bmp
 id=cfw-emu
