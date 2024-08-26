@@ -47,7 +47,7 @@
     - [x] 后台音乐 `sys-tune` [From Here](https://www.tekqart.com/thread-370954-1-1.html)
     - [x] 系统补丁 `sys-patch` [From Here](https://github.com/impeeza/sys-patch/releases/latest)
     - [x] 超频插件 `sys-clk` [From Here](https://github.com/retronx-team/sys-clk/releases/latest)
-    - [x] 调频插件 `OC Toolkit` [From Here](https://github.com/halop/OC_Toolkit/releases/latest)
+    - [x] 调频插件 `OC Toolkit` [From Here](https://github.com/halop/OC_Toolkit_SC_EOS/releases/latest)
 
   - 其他
     - [x] 蓝牙手柄插件 `MissionControl` [From Here](https://github.com/ndeadly/MissionControl/releases/latest)
@@ -70,6 +70,7 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2024-08-26 更新脚本，修正 `OC Toolkit` 更新造成的运行错误
 - 2024-07-21 添加 `sys-clk`、`OC Toolkit`
 - 2024-07-16 更新脚本，替换 `Tesla-Menu` 为 `Ultrahand-Overlay`，去除 `sys-clk`
 - 2024-07-06 更新 `daybreak` 为汉化版

@@ -583,22 +583,22 @@ else
     rm README.md
 fi
 
-### Fetch lastest OC_Toolkit from https://github.com/halop/OC_Toolkit/releases/latest
-curl -sL https://api.github.com/repos/halop/OC_Toolkit/releases/latest \
+### Fetch lastest OC_Toolkit_SC_EOS from https://github.com/halop/OC_Toolkit_SC_EOS/releases/latest
+curl -sL https://api.github.com/repos/halop/OC_Toolkit_SC_EOS/releases/latest \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
-curl -sL https://api.github.com/repos/halop/OC_Toolkit/releases/latest \
+curl -sL https://api.github.com/repos/halop/OC_Toolkit_SC_EOS/releases/latest \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*kip.zip"' \
   | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o kip.zip
-curl -sL https://api.github.com/repos/halop/OC_Toolkit/releases/latest \
+curl -sL https://api.github.com/repos/halop/OC_Toolkit_SC_EOS/releases/latest \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*OC.Toolkit.u.zip"' \
   | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o OC.Toolkit.u.zip
 if [ $? -ne 0 ]; then
-    echo "OC_Toolkit download\033[31m failed\033[0m."
+    echo "OC_Toolkit_SC_EOS download\033[31m failed\033[0m."
 else
-    echo "OC_Toolkit download\033[32m success\033[0m."
+    echo "OC_Toolkit_SC_EOS download\033[32m success\033[0m."
     unzip -oq kip.zip -d ./atmosphere/kips/
     unzip -oq OC.Toolkit.u.zip -d ./switch/.packages/
     rm kip.zip
