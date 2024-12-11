@@ -109,15 +109,19 @@ else
     rm logo.zip
 fi
 
-### Fetch latest Lockpick_RCM.bin
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/Lockpick_RCM.zip -o Lockpick_RCM.zip
+### Fetch latest Lockpick_RCM.bin https://github.com/saneki/Lockpick_RCM/releases/latest
+curl -sL https://api.github.com/repos/saneki/Lockpick_RCM/releases/latest \
+  | jq '.tag_name' \
+  | xargs -I {} echo Lockpick_RCM.bin {} >> ../description.txt
+curl -sL https://api.github.com/repos/saneki/Lockpick_RCM/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Lockpick_RCM.bin"' \
+  | sed 's/"//g' \
+  | xargs -I {} curl -sL {} -o Lockpick_RCM.bin
 if [ $? -ne 0 ]; then
     echo "Lockpick_RCM download\033[31m failed\033[0m."
 else
     echo "Lockpick_RCM download\033[32m success\033[0m."
-    echo Lockpick_RCM v1.9.12 >> ../description.txt
-    unzip -oq Lockpick_RCM.zip
-    rm Lockpick_RCM.zip
+    mv Lockpick_RCM.bin ./bootloader/payloads
 fi
 
 ### Fetch latest TegraExplorer.bin form https://github.com/suchmememanyskill/TegraExplorer/releases/latest
@@ -165,11 +169,11 @@ else
     mv Switch_90DNS_tester.nro ./switch/Switch_90DNS_tester
 fi
 
-### Fetch lastest DBI from https://github.com/rashevskyv/dbi/releases/latest
-curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
+### Fetch lastest DBI from https://github.com/rashevskyv/dbi/releases/tag/658
+curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/135856657 \
   | jq '.name' \
   | xargs -I {} echo {} >> ../description.txt
-curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/latest \
+curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/135856657 \
   | grep -oP '"browser_download_url": "\Khttps://[^"]*DBI.nro"' \
   | sed 's/"//g' \
   | xargs -I {} curl -sL {} -o DBI.nro
