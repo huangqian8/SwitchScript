@@ -62,3 +62,11 @@ jobs:
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.actions_release }}
+
+    - name: Delete workflow runs for current repo
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        token: ${{ secrets.actions_release }}
+        repository: ${{ github.repository }}
+        retain_days: 7
+        keep_minimum_runs: 6
