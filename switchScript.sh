@@ -640,15 +640,10 @@ autonogc=1
 updater2p=0
 bootprotect=0
 
-[Fusee]
-icon=bootloader/res/icon_ams.bmp
-payload=bootloader/payloads/fusee.bin
-
 [CFW (emuMMC)]
 emummcforce=1
 fss0=atmosphere/package3
 kip1patch=nosigchk
-kip1=atmosphere/kips/loader.kip
 atmosphere=1
 icon=bootloader/res/icon_Atmosphere_emunand.bmp
 id=cfw-emu
