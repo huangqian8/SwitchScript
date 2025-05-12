@@ -109,19 +109,21 @@ else
     rm logo.zip
 fi
 
-### Fetch latest Lockpick_RCM.bin https://github.com/saneki/Lockpick_RCM/releases/latest
-curl -sL https://api.github.com/repos/saneki/Lockpick_RCM/releases/latest \
+### Fetch latest Lockpick_RCM.bin https://github.com/impeeza/Lockpick_RCMDecScots/releases/latest
+curl -sL https://api.github.com/repos/impeeza/Lockpick_RCMDecScots/releases/latest \
   | jq '.tag_name' \
   | xargs -I {} echo Lockpick_RCM.bin {} >> ../description.txt
-curl -sL https://api.github.com/repos/saneki/Lockpick_RCM/releases/latest \
-  | grep -oP '"browser_download_url": "\Khttps://[^"]*Lockpick_RCM.bin"' \
+curl -sL https://api.github.com/repos/impeeza/Lockpick_RCMDecScots/releases/latest \
+  | grep -oP '"browser_download_url": "\Khttps://[^"]*Lockpick_RCM[^"]*.zip"' \
   | sed 's/"//g' \
-  | xargs -I {} curl -sL {} -o Lockpick_RCM.bin
+  | xargs -I {} curl -sL {} -o Lockpick_RCM.zip
 if [ $? -ne 0 ]; then
     echo "Lockpick_RCM download\033[31m failed\033[0m."
 else
     echo "Lockpick_RCM download\033[32m success\033[0m."
+    unzip -oq Lockpick_RCM.zip
     mv Lockpick_RCM.bin ./bootloader/payloads
+    rm Lockpick_RCM.zip
 fi
 
 ### Fetch latest TegraExplorer.bin form https://github.com/suchmememanyskill/TegraExplorer/releases/latest
