@@ -69,4 +69,4 @@ jobs:
         token: ${{ secrets.actions_release }}
         repository: ${{ github.repository }}
         retain_days: 7
-        keep_minimum_runs: 6
+        keep_minimum_runs: 3
