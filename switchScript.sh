@@ -534,46 +534,106 @@ fi
 
 ### Write system_settings.ini in /atmosphere/config
 cat > ./atmosphere/config/system_settings.ini << ENDOFFILE
+; =============================================
+; Atmosphere 防封禁核心配置文件
+; =============================================
+
 [eupld]
-; 禁用将错误报告上传到任天堂
+; 禁用错误报告上传
 upload_enabled = u8!0x0
 
 [ro]
-; 控制 RO 是否应简化其对 NRO 的验证。
-; （注意：这通常不是必需的，可以使用 IPS 补丁。
+; 放宽NRO验证限制，便于自制软件运行
 ease_nro_restriction = u8!0x1
 
 [atmosphere]
-; 是否自动开启所有金手指。0=关。1=开。
+; 金手指默认关闭，按需开启更安全
 dmnt_cheats_enabled_by_default = u8!0x0
-
-; 如果你希望大气记住你上次金手指状态，请删除下方；号
-; dmnt_always_save_cheat_toggles = u8!0x1
-
-; 如果大气崩溃，10秒后自动重启
-; 1秒=1000毫秒，转换16进制
+; 崩溃10秒后自动重启 (10000毫秒)
 fatal_auto_reboot_interval = u64!0x2710
-
-; 使电源菜单的“重新启动”按钮重新启动到payload
-; 设置"normal"正常重启l 设置"rcm"重启RCM，
-; power_menu_reboot_function = str!payload
-
-; 启动90DNS与任天堂服务器屏蔽
+; 启用DNS屏蔽，阻止连接任天堂服务器
 enable_dns_mitm = u8!0x1
 add_defaults_to_dns_hosts = u8!0x1
-
-; 是否将蓝牙配对数据库用与虚拟系统
+; 虚拟系统使用外部蓝牙配对
 enable_external_bluetooth_db = u8!0x1
 
 [usb]
-; 开启USB3.0，尾数改为0是关闭
+; 强制开启USB 3.0
 usb30_force_enabled = u8!0x1
 
 [tc]
+; 温控设置 - 保持默认即可
 sleep_enabled = u8!0x0
-holdable_tskin = u32!0xEA60
-tskin_rate_table_console = str!”[[-1000000, 28000, 0, 0], [28000, 42000, 0, 51], [42000, 48000, 51, 102], [48000, 55000, 102, 153], [55000, 60000, 153, 255], [60000, 68000, 255, 255]]”
-tskin_rate_table_handheld = str!”[[-1000000, 28000, 0, 0], [28000, 42000, 0, 51], [42000, 48000, 51, 102], [48000, 55000, 102, 153], [55000, 60000, 153, 255], [60000, 68000, 255, 255]]”
+
+; =============================================
+; 🛡 防封禁核心配置 - 禁用所有任天堂服务
+; =============================================
+
+[bgtc]
+; 禁用所有后台任务
+enable_halfawake = u32!0x0
+minimum_interval_normal = u32!0x7FFFFFFF
+minimum_interval_save = u32!0x7FFFFFFF
+
+[npns]
+; 禁用新闻推送服务
+background_processing = u8!0x0
+sleep_periodic_interval = u32!0x7FFFFFFF
+
+[ns.notification]
+; 完全禁用系统更新检查和服务通信
+enable_download_task_list = u8!0x0
+enable_network_update = u8!0x0
+enable_request_on_cold_boot = u8!0x0
+retry_interval_min = u32!0x7FFFFFFF
+
+[account]
+; 禁用账户验证和许可证检查
+na_required_for_network_service = u8!0x0
+na_license_verification_enabled = u8!0x0
+
+[capsrv]
+; 禁用截图和录像验证
+enable_album_screenshot_filedata_verification = u8!0x0
+enable_album_movie_filehash_verification = u8!0x0
+
+[friends]
+; 禁用好友后台服务
+background_processing = u8!0x0
+
+[prepo]
+; 禁用数据统计上报
+transmission_interval_min = u32!0x7FFFFFFF
+save_system_report = u8!0x0
+
+[olsc]
+; 禁用云存档服务
+default_auto_upload_global_setting = u8!0x0
+default_auto_download_global_setting = u8!0x0
+
+[ns.rights]
+; 跳过账户验证（重要权限检查）
+skip_account_validation_on_rights_check = u8!0x1
+
+; =============================================
+; ⚡ 性能优化配置
+; =============================================
+
+[account.daemon]
+; 延长账户服务间隔
+background_awaking_periodicity = u32!0x7FFFFFFF
+
+[notification.presenter]
+; 禁用通知重试
+connection_retry_count = u32!0x0
+
+[systemupdate]
+; 禁用系统更新重试
+bgnup_retry_seconds = u32!0x7FFFFFFF
+
+[pctl]
+; 延长家长控制检查间隔
+intermittent_task_interval_seconds = u32!0x7FFFFFFF
 ENDOFFILE
 if [ $? -ne 0 ]; then
     echo "Writing system_settings.ini in ./atmosphere/config\033[31m failed\033[0m."
