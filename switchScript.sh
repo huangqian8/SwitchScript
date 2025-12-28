@@ -114,14 +114,14 @@ curl -sL "$download_url" -o Switch_90DNS_tester.nro && {
     mv Switch_90DNS_tester.nro ./switch/Switch_90DNS_tester
 } || echo "Switch_90DNS_tester download\033[31m failed\033[0m."
 
-latest_release_info=$(curl -sL https://api.github.com/repos/rashevskyv/dbi/releases/135856657)
-download_url=$(echo "$latest_release_info" | grep -oP '"browser_download_url": "\Khttps://[^"]*DBI.nro' | sed 's/"//g')
+latest_release_info=$(curl -sL https://api.github.com/repos/gzk47/DBIPatcher/releases/latest)
+download_url=$(echo "$latest_release_info" | grep -oP '"browser_download_url": "\Khttps://[^"]*DBI.*.zhcn.nro' | sed 's/"//g')
 curl -sL "$download_url" -o DBI.nro && {
     echo "DBI download\033[32m success\033[0m."
     mv DBI.nro ./switch/DBI
 } || echo "DBI download\033[31m failed\033[0m."
 
-latest_release_info=$(curl -sL https://api.github.com/repos/dragonflylee/Awoo-Installer/releases/latest)
+latest_release_info=$(curl -sL https://api.github.com/repos/Huntereb/Awoo-Installer/releases/latest)
 download_url=$(echo "$latest_release_info" | grep -oP '"browser_download_url": "\Khttps://[^"]*Awoo-Installer.zip' | sed 's/"//g')
 curl -sL "$download_url" -o Awoo-Installer.zip && {
     echo "Awoo Installer download\033[32m success\033[0m."
@@ -292,12 +292,14 @@ curl -sL "$download_url" -o ldn_mitm.zip&& {
     rm ldn_mitm.zip
 } || echo "ldn_mitm download\033[31m failed\033[0m."
 
-latest_release_info=$(curl -sL https://api.github.com/repos/zdm65477730/emuiibo/releases/latest)
+latest_release_info=$(curl -sL https://api.github.com/repos/XorTroll/emuiibo/releases/latest)
 download_url=$(echo "$latest_release_info" | grep -oP '"browser_download_url": "\Khttps://[^"]*emuiibo.zip' | sed 's/"//g')
 curl -sL "$download_url" -o emuiibo.zip&& {
     echo "emuiibo download\033[32m success\033[0m."
     unzip -oq emuiibo.zip
+    cp -rf SdOut/* ./
     rm emuiibo.zip
+    rm -rf SdOut
 } || echo "emuiibo download\033[31m failed\033[0m."
 
 latest_release_info=$(curl -sL https://api.github.com/repos/zdm65477730/QuickNTP/releases/latest)
@@ -315,23 +317,6 @@ curl -sL "$download_url" -o Fizeau.zip&& {
     unzip -oq Fizeau.zip
     rm Fizeau.zip
 } || echo "Fizeau download\033[31m failed\033[0m."
-
-curl -sL https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/Zing.zip -o Zing.zip
-if [ $? -ne 0 ]; then
-    echo "Zing download\033[31m failed\033[0m."
-else
-    echo "Zing download\033[32m success\033[0m."
-    unzip -oq Zing.zip
-    rm Zing.zip
-fi
-
-latest_release_info=$(curl -sL https://api.github.com/repos/HookedBehemoth/sys-tune/releases/latest)
-download_url=$(echo "$latest_release_info" | grep -oP '"browser_download_url": "\Khttps://[^"]*sys-tune[^"]*.zip' | sed 's/"//g')
-curl -sL "$download_url" -o sys-tune.zip&& {
-    echo "sys-tune download\033[32m success\033[0m."
-    unzip -oq sys-tune.zip
-    rm sys-tune.zip
-} || echo "sys-tune download\033[31m failed\033[0m."
 
 latest_release_info=$(curl -sL https://api.github.com/repos/zdm65477730/sys-patch/releases/latest)
 download_url=$(echo "$latest_release_info" | grep -oP '"browser_download_url": "\Khttps://[^"]*sys-patch.zip' | sed 's/"//g')
@@ -402,8 +387,6 @@ ldn_mitm
 emuiibo
 QuickNTP
 Fizeau
-Zing
-sys-tune
 sys-patch
 sys-clk
 OC_Toolkit_SC_EOS
