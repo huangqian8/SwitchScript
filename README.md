@@ -68,6 +68,7 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2026-03-01 精简优化 `switchScript.sh`
 - 2025-12-28 去除 `Zing` 和 `sys-tune`，更新 `DBI` 、 `Awoo Installer` 及 `emuiibo` 仓库地址
 - 2025-10-06 更新 `system_settings.ini`
 - 2025-05-27 精简代码，修正由于 `API` 限制而造成的运行错误
