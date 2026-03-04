@@ -25,6 +25,20 @@ log_success() { echo -e "${1} ${GREEN}success${NC}."; }
 log_error() { echo -e "${1} ${RED}failed${NC}."; }
 log_info() { echo -e "${YELLOW}[INFO]${NC} ${1}"; }
 
+# Description lines (name + version)
+declare -a DESCRIPTION_LINES=()
+
+record_item() {
+    local name="$1"
+    local version="${2:-unknown}"
+    DESCRIPTION_LINES+=("${name} (${version})")
+}
+
+write_description_file() {
+    : > "$DESCRIPTION_FILE"
+    printf "%s\n" "${DESCRIPTION_LINES[@]}" >> "$DESCRIPTION_FILE"
+}
+
 # Cleanup and create directories
 cleanup_and_setup() {
     log_info "Setting up directories..."
@@ -79,16 +93,44 @@ extract_and_cleanup() {
     fi
 }
 
-# Get latest release URL
-get_latest_release_url() {
+# Ensure required dependencies exist
+check_dependencies() {
+    local missing=0
+    for bin in curl jq unzip 7z git; do
+        if ! command -v "$bin" >/dev/null 2>&1; then
+            log_error "Missing dependency: $bin"
+            missing=1
+        fi
+    done
+
+    [ "$missing" -eq 0 ] || {
+        echo "Please install required dependencies first." >&2
+        exit 1
+    }
+}
+
+# Get latest release asset URL + tag: prints "url|tag"
+get_latest_release_asset() {
     local repo="$1"
     local pattern="$2"
-    curl -fsSL "https://api.github.com/repos/$repo/releases/latest" | \
-        grep -oP '"browser_download_url":\s*"\K[^"]*'"$pattern"'[^"]*' | head -1
+    local api="https://api.github.com/repos/$repo/releases/latest"
+    local release_json url tag
+
+    release_json=$(curl -fsSL "$api") || return 1
+    tag=$(echo "$release_json" | jq -r '.tag_name // "unknown"')
+    url=$(echo "$release_json" | jq -r --arg re "$pattern" '.assets[]?.browser_download_url | select(test($re))' | head -n1)
+
+    if [ -n "$url" ] && [ "$url" != "null" ]; then
+        echo "${url}|${tag}"
+        return 0
+    fi
+
+    return 1
 }
 
 # Main download and setup function
 main() {
+    check_dependencies
     cleanup_and_setup
     cd "$SWITCHSD_DIR"
     
@@ -98,30 +140,40 @@ main() {
     log_info "Downloading core system files..."
     
     # Atmosphere
-    local atmosphere_info=$(curl -fsSL https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases/latest)
-    local atmosphere_url=$(echo "$atmosphere_info" | grep -oP '"browser_download_url":\s*"\K[^"]*atmosphere[^"]*\.zip')
-    local fusee_url=$(echo "$atmosphere_info" | grep -oP '"browser_download_url":\s*"\K[^"]*fusee\.bin')
-    
+    local atmosphere_url atmosphere_tag
+    IFS='|' read -r atmosphere_url atmosphere_tag < <(get_latest_release_asset "Atmosphere-NX/Atmosphere" "atmosphere.*\\.zip") || true
+
+    local fusee_url
+    IFS='|' read -r fusee_url _ < <(get_latest_release_asset "Atmosphere-NX/Atmosphere" "fusee\\.bin") || true
+
     if [ -n "$atmosphere_url" ] && download_file "$atmosphere_url" "atmosphere.zip" "Atmosphere"; then
         extract_and_cleanup "atmosphere.zip" "Atmosphere"
+        record_item "Atmosphere" "$atmosphere_tag"
     fi
-    
+
     if [ -n "$fusee_url" ] && download_file "$fusee_url" "fusee.bin" "Fusee"; then
         mv fusee.bin ./bootloader/payloads/
+        record_item "Fusee" "$atmosphere_tag"
     fi
-    
+
     # Hekate
-    local hekate_url=$(get_latest_release_url "easyworld/hekate" "hekate_ctcaer.*_sc\.zip")
+    local hekate_url hekate_tag
+    IFS='|' read -r hekate_url hekate_tag < <(get_latest_release_asset "easyworld/hekate" "hekate_ctcaer.*_sc\\.zip") || true
     if [ -n "$hekate_url" ] && download_file "$hekate_url" "hekate.zip" "Hekate + Nyx CHS"; then
         extract_and_cleanup "hekate.zip" "Hekate + Nyx CHS"
+        record_item "Hekate + Nyx CHS" "$hekate_tag"
     fi
     
     # Sigpatches and logo
-    download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sigpatches.zip" "sigpatches.zip" "Sigpatches" && \
+    if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sigpatches.zip" "sigpatches.zip" "Sigpatches"; then
         extract_and_cleanup "sigpatches.zip" "Sigpatches"
-    
-    download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/theme/logo.zip" "logo.zip" "Logo" && \
+        record_item "Sigpatches" "raw-main"
+    fi
+
+    if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/theme/logo.zip" "logo.zip" "Logo"; then
         extract_and_cleanup "logo.zip" "Logo"
+        record_item "Logo" "raw-main"
+    fi
 
     # Payload downloads
     log_info "Downloading payloads..."
@@ -134,9 +186,11 @@ main() {
     
     for repo_pattern in "${!payloads[@]}"; do
         IFS=':' read -r pattern name <<< "${payloads[$repo_pattern]}"
-        local url=$(get_latest_release_url "$repo_pattern" "$pattern")
+        local url tag
+        IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
         if [ -n "$url" ] && download_file "$url" "${name}.bin" "$name"; then
             mv "${name}.bin" ./bootloader/payloads/
+            record_item "$name" "$tag"
         fi
     done
 
@@ -160,11 +214,13 @@ main() {
     
     for repo_info in "${!homebrew_apps[@]}"; do
         IFS=':' read -r pattern target_path name <<< "${homebrew_apps[$repo_info]}"
-        local url=$(get_latest_release_url "$repo_info" "$pattern")
+        local url tag
+        IFS='|' read -r url tag < <(get_latest_release_asset "$repo_info" "$pattern") || true
         local temp_file=$(basename "$target_path")
         if [ -n "$url" ] && download_file "$url" "$temp_file" "$name"; then
             mkdir -p "$(dirname "$target_path")"
             mv "$temp_file" "$target_path"
+            record_item "$name" "$tag"
         fi
     done
 
@@ -172,32 +228,45 @@ main() {
     log_info "Downloading special packages..."
     
     # Awoo Installer
-    local awoo_url=$(get_latest_release_url "Huntereb/Awoo-Installer" "Awoo-Installer\.zip")
-    [ -n "$awoo_url" ] && download_file "$awoo_url" "Awoo-Installer.zip" "Awoo Installer" && \
+    local awoo_url awoo_tag
+    IFS='|' read -r awoo_url awoo_tag < <(get_latest_release_asset "Huntereb/Awoo-Installer" "Awoo-Installer\\.zip") || true
+    if [ -n "$awoo_url" ] && download_file "$awoo_url" "Awoo-Installer.zip" "Awoo Installer"; then
         extract_and_cleanup "Awoo-Installer.zip" "Awoo Installer"
-    
+        record_item "Awoo Installer" "$awoo_tag"
+    fi
+
     # AIO Switch Updater
-    local aio_url=$(get_latest_release_url "HamletDuFromage/aio-switch-updater" "aio-switch-updater\.zip")
-    [ -n "$aio_url" ] && download_file "$aio_url" "aio-switch-updater.zip" "aio-switch-updater" && \
+    local aio_url aio_tag
+    IFS='|' read -r aio_url aio_tag < <(get_latest_release_asset "HamletDuFromage/aio-switch-updater" "aio-switch-updater\\.zip") || true
+    if [ -n "$aio_url" ] && download_file "$aio_url" "aio-switch-updater.zip" "aio-switch-updater"; then
         extract_and_cleanup "aio-switch-updater.zip" "aio-switch-updater"
-    
+        record_item "aio-switch-updater" "$aio_tag"
+    fi
+
     # Wiliwili
-    local wiliwili_url=$(get_latest_release_url "xfangfang/wiliwili" "wiliwili-NintendoSwitch\.zip")
+    local wiliwili_url wiliwili_tag
+    IFS='|' read -r wiliwili_url wiliwili_tag < <(get_latest_release_asset "xfangfang/wiliwili" "wiliwili-NintendoSwitch\\.zip") || true
     if [ -n "$wiliwili_url" ] && download_file "$wiliwili_url" "wiliwili-NintendoSwitch.zip" "wiliwili"; then
         extract_and_cleanup "wiliwili-NintendoSwitch.zip" "wiliwili"
         [ -d wiliwili ] && mv wiliwili/wiliwili.nro ./switch/wiliwili/ && rm -rf wiliwili
+        record_item "wiliwili" "$wiliwili_tag"
     fi
-    
+
     # Daybreak
-    download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/daybreak_x.zip" "daybreak_x.zip" "daybreak" && \
+    if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/daybreak_x.zip" "daybreak_x.zip" "daybreak"; then
         extract_and_cleanup "daybreak_x.zip" "daybreak"
+        record_item "daybreak" "raw-main"
+    fi
     
     # Theme patches
     if git clone --depth 1 https://github.com/exelix11/theme-patches 2>/dev/null; then
         log_success "theme-patches download"
+        local theme_patch_version
+        theme_patch_version=$(git -C theme-patches rev-parse --short HEAD 2>/dev/null || echo "unknown")
         mkdir -p themes
         [ -d theme-patches/systemPatches ] && mv theme-patches/systemPatches ./themes/
         rm -rf theme-patches
+        record_item "theme-patches" "$theme_patch_version"
     else
         log_error "theme-patches download"
     fi
@@ -222,30 +291,41 @@ main() {
     
     for repo_pattern in "${!system_modules[@]}"; do
         IFS=':' read -r pattern name <<< "${system_modules[$repo_pattern]}"
-        local url=$(get_latest_release_url "$repo_pattern" "$pattern")
-        [ -n "$url" ] && download_file "$url" "${name}.zip" "$name" && \
+        local url tag
+        IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
+        if [ -n "$url" ] && download_file "$url" "${name}.zip" "$name"; then
             extract_and_cleanup "${name}.zip" "$name"
+            record_item "$name" "$tag"
+        fi
     done
     
     # Emuiibo (special handling)
-    local emuiibo_url=$(get_latest_release_url "XorTroll/emuiibo" "emuiibo\.zip")
+    local emuiibo_url emuiibo_tag
+    IFS='|' read -r emuiibo_url emuiibo_tag < <(get_latest_release_asset "XorTroll/emuiibo" "emuiibo\\.zip") || true
     if [ -n "$emuiibo_url" ] && download_file "$emuiibo_url" "emuiibo.zip" "emuiibo"; then
         extract_and_cleanup "emuiibo.zip" "emuiibo"
         [ -d SdOut ] && cp -rf SdOut/* ./ && rm -rf SdOut
+        record_item "emuiibo" "$emuiibo_tag"
     fi
     
     # OC Toolkit (dual download)
-    local oc_info=$(curl -fsSL https://api.github.com/repos/halop/OC_Toolkit_SC_EOS/releases/latest)
-    local kip_url=$(echo "$oc_info" | grep -oP '"browser_download_url":\s*"\K[^"]*kip\.zip')
-    local toolkit_url=$(echo "$oc_info" | grep -oP '"browser_download_url":\s*"\K[^"]*OC\.Toolkit\.u\.zip')
-    
+    local oc_info oc_tag kip_url toolkit_url
+    oc_info=$(curl -fsSL https://api.github.com/repos/halop/OC_Toolkit_SC_EOS/releases/latest)
+    oc_tag=$(echo "$oc_info" | jq -r '.tag_name // "unknown"')
+    kip_url=$(echo "$oc_info" | jq -r '.assets[]?.browser_download_url | select(test("kip\\.zip"))' | head -n1)
+    toolkit_url=$(echo "$oc_info" | jq -r '.assets[]?.browser_download_url | select(test("OC\\.Toolkit\\.u\\.zip"))' | head -n1)
+
     if [ -n "$kip_url" ] && [ -n "$toolkit_url" ] && download_file "$kip_url" "kip.zip" "OC Toolkit KIP" && download_file "$toolkit_url" "OC.Toolkit.u.zip" "OC Toolkit"; then
         log_success "OC_Toolkit_SC_EOS download"
         extract_and_cleanup "kip.zip" "OC Toolkit KIP" "./atmosphere/kips/"
         extract_and_cleanup "OC.Toolkit.u.zip" "OC Toolkit" "./switch/.packages/"
+        record_item "OC_Toolkit_SC_EOS" "$oc_tag"
     else
         log_error "OC_Toolkit_SC_EOS download"
     fi
+
+    # Write runtime description (with versions)
+    write_description_file
 
     # Generate configuration files
     generate_configs
@@ -261,47 +341,8 @@ main() {
 generate_configs() {
     log_info "Generating configuration files..."
     
-    # Generate description file
-    cat > "$DESCRIPTION_FILE" << 'EOF'
-Atmosphere
-fusee
-Hekate + Nyx CHS
-sigpatches
-Lockpick_RCM
-TegraExplorer
-CommonProblemResolver
-Switch_90DNS_tester
-DBI
-Awoo-Installer
-Hekate-Toolbox
-NX-Activity-Log
-NXThemesInstaller
-JKSV
-Tencent-switcher-GUI
-aio-switch-updater
-wiliwili
-SimpleModDownloader
-Switchfin
-Moonlight
-NX-Shell
-hb-appstore
-daybreak
-nx-ovlloader
-Ultrahand-Overlay
-EdiZon
-ovl-sysmodules
-StatusMonitor
-ReverseNX-RT
-ldn_mitm
-emuiibo
-QuickNTP
-Fizeau
-sys-patch
-sys-clk
-OC_Toolkit_SC_EOS
-MissionControl
-EOF
-    
+    # description.txt is generated dynamically in main() via write_description_file()
+
     # Generate hekate_ipl.ini
     cat > ./bootloader/hekate_ipl.ini << 'EOF'
 [config]
