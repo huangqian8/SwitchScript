@@ -82,7 +82,13 @@ extract_and_cleanup() {
     if [ -f "$archive" ]; then
         case "$archive" in
             *.zip) unzip -oq "$archive" -d "$extract_dir" ;;
-            *.7z) 7z x "$archive" -o"$extract_dir" -y >/dev/null ;;
+            *.7z)
+                if ! command -v 7z >/dev/null 2>&1; then
+                    log_error "$description extraction (missing dependency: 7z)"
+                    return 1
+                fi
+                7z x "$archive" -o"$extract_dir" -y >/dev/null
+                ;;
             *) log_error "Unknown archive format: $archive"; return 1 ;;
         esac
         rm -f "$archive"
@@ -96,7 +102,7 @@ extract_and_cleanup() {
 # Ensure required dependencies exist
 check_dependencies() {
     local missing=0
-    for bin in curl jq unzip 7z git; do
+    for bin in curl jq unzip git; do
         if ! command -v "$bin" >/dev/null 2>&1; then
             log_error "Missing dependency: $bin"
             missing=1
