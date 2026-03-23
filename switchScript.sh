@@ -61,7 +61,6 @@ download_file() {
     local retry_count=0
     
     while [ $retry_count -lt $max_retries ]; do
-        echo "[DEBUG] downloading description=$description url=$url output=$output attempt=$((retry_count + 1))/$max_retries" >&2
         if curl -fsSL --connect-timeout 30 --max-time 300 "$url" -o "$output"; then
             log_success "$description download"
             return 0
