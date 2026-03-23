@@ -1,5 +1,9 @@
 #!/bin/bash
 set -euo pipefail
+set -x
+PS4="[${LINENO}] "
+
+trap 'rc=$?; echo "[ERROR] line=${LINENO} cmd=${BASH_COMMAND}" >&2; exit $rc' ERR
 
 ### Credit to the Authors at https://rentry.org/CFWGuides
 ### Script created by Fraxalotl
@@ -57,6 +61,7 @@ download_file() {
     local retry_count=0
     
     while [ $retry_count -lt $max_retries ]; do
+        echo "[DEBUG] downloading description=$description url=$url output=$output attempt=$((retry_count + 1))/$max_retries" >&2
         if curl -fsSL --connect-timeout 30 --max-time 300 "$url" -o "$output"; then
             log_success "$description download"
             return 0
@@ -122,7 +127,7 @@ get_latest_release_asset() {
     local api="https://api.github.com/repos/$repo/releases/latest"
     local release_json url tag
 
-    release_json=$(curl -fsSL "$api") || return 1
+    release_json=$(github_api_get "$api") || return 1
     tag=$(echo "$release_json" | jq -r '.tag_name // "unknown"')
     url=$(echo "$release_json" | jq -r --arg re "$pattern" '.assets[]?.browser_download_url | select(test($re))' | head -n1)
 
@@ -131,7 +136,17 @@ get_latest_release_asset() {
         return 0
     fi
 
+    echo "[DEBUG] latest release asset not found repo=$repo pattern=$pattern tag=$tag" >&2
     return 1
+}
+
+github_api_get() {
+    local url="$1"
+    local -a args=( -fsSL -H "Accept: application/vnd.github+json" )
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
+    fi
+    curl "${args[@]}" "$url"
 }
 
 # Main download and setup function
