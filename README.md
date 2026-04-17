@@ -26,6 +26,7 @@
     - [x] Jellyfin客户端 `Switchfin` [From Here](https://github.com/dragonflylee/switchfin/releases/latest)
     - [x] 串流工具 `Moonlight` [From Here](https://github.com/XITRIX/Moonlight-Switch/releases/latest)
     - [x] 文件管理 `NX-Shell` [From Here](https://github.com/zdm65477730/NX-Shell/releases/latest)
+    - [x] Homebrew 启动器 `Sphaira` [From Here](https://github.com/ITotalJustice/sphaira/releases/latest)
     - [x] 黑商店 `hb-appstore`  [From Here](https://github.com/fortheusers/hb-appstore/releases/latest)
     - [x] 系统升级工具 `daybreak`  [From Here](https://www.tekqart.com/thread-258184-1-1.html)
 
@@ -68,6 +69,7 @@
   - 运行脚本（switchScript.sh）
 
 ## 更新日志
+- 2026-04-18 添加 `Sphaira` 启动器
 - 2026-03-01 精简优化 `switchScript.sh`
 - 2025-12-28 去除 `Zing` 和 `sys-tune`，更新 `DBI` 、 `Awoo Installer` 及 `emuiibo` 仓库地址
 - 2025-10-06 更新 `system_settings.ini`
