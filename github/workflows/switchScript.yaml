@@ -1,0 +1,74 @@
+name: switchScript
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+      - 'switchScript.sh'
+  schedule:
+    - cron: 0 8 * * *
+
+env:
+  SCRIPT_SH: switchScript.sh
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        ref: main
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo -E apt install -y jq
+
+    - name: "Build & Release"
+      run: |
+        echo "DATE=$(date "+%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+        echo "tag_name=$(date +%Y%m%d)" >> $GITHUB_ENV
+        chmod +x $SCRIPT_SH
+        ./$SCRIPT_SH
+        zip -rq SwitchSD.zip SwitchSD
+
+    - name: Read description.txt
+      id: description
+      uses: juliangruber/read-file-action@v1
+      with:
+        path: ./description.txt
+
+    - name: Create release
+      uses: ncipollo/release-action@v1
+      with:
+        name: ${{ env.DATE }} ❤️ | 大气层个人整合包
+        allowUpdates: true
+        tag: ${{ env.tag_name }}
+        commit: main
+        token: ${{ secrets.actions_release }}
+        body: "${{ steps.description.outputs.content }}"
+        artifacts: "SwitchSD.zip"
+
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.3.4
+      with:
+        keep_latest: 5
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.actions_release }}
+
+    - name: Delete workflow runs for current repo
+      uses: Mattraks/delete-workflow-runs@v2.1.0
+      with:
+        token: ${{ secrets.actions_release }}
+        repository: ${{ github.repository }}
+        retain_days: 7
+        keep_minimum_runs: 6
