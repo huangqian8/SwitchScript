@@ -259,7 +259,7 @@ main() {
     local sphaira_url sphaira_tag
     IFS='|' read -r sphaira_url sphaira_tag < <(get_latest_release_asset "ITotalJustice/sphaira" "sphaira\\.zip") || true
     if [ -n "$sphaira_url" ] && download_file "$sphaira_url" "sphaira.zip" "Sphaira"; then
-        extract_and_cleanup "sphaira.zip" "Sphaira" ./switch
+        extract_and_cleanup "sphaira.zip" "Sphaira"
         record_item "Sphaira" "$sphaira_tag"
     fi
 
