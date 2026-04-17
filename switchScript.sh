@@ -50,7 +50,7 @@ cleanup_and_setup() {
     [ -e "$DESCRIPTION_FILE" ] && rm -f "$DESCRIPTION_FILE"
     
     # Create directory structure in batch
-    mkdir -p "$SWITCHSD_DIR"/{atmosphere/{config,hosts,contents/{420000000007E51Anx-ovlloader,0000000000534C56ReverseNX-RT,4200000000000010ldn_mitm,0100000000000352emuiibo,0100000000000F12Fizeau,4200000000000000sys-tune,420000000000000Bsys-patch,010000000000bd00MissionControl,00FF0000636C6BFFsys-clk},kips},bootloader/payloads,config/ultrahand/lang,switch/{Switch_90DNS_tester,DBI,NX-Shell,HB-App-Store,HekateToolbox,JKSV,Moonlight,NXThemesInstaller,SimpleModDownloader,Switchfin,tencent-switcher-gui,wiliwili,NX-Activity-Log,.overlays,.packages}}
+    mkdir -p "$SWITCHSD_DIR"/{atmosphere/{config,hosts,contents/{420000000007E51Anx-ovlloader,0000000000534C56ReverseNX-RT,4200000000000010ldn_mitm,0100000000000352emuiibo,0100000000000F12Fizeau,4200000000000000sys-tune,420000000000000Bsys-patch,010000000000bd00MissionControl,00FF0000636C6BFFsys-clk},kips},bootloader/payloads,config/ultrahand/lang,switch/{Switch_90DNS_tester,DBI,NX-Shell,HB-App-Store,HekateToolbox,JKSV,Moonlight,NXThemesInstaller,SimpleModDownloader,Switchfin,tencent-switcher-gui,wiliwili,NX-Activity-Log,Sphaira,.overlays,.packages}}
 }
 # Download function with retry logic
 download_file() {
@@ -253,6 +253,14 @@ main() {
     if [ -n "$awoo_url" ] && download_file "$awoo_url" "Awoo-Installer.zip" "Awoo Installer"; then
         extract_and_cleanup "Awoo-Installer.zip" "Awoo Installer"
         record_item "Awoo Installer" "$awoo_tag"
+    fi
+
+    # Sphaira - homebrew menu
+    local sphaira_url sphaira_tag
+    IFS='|' read -r sphaira_url sphaira_tag < <(get_latest_release_asset "ITotalJustice/sphaira" "sphaira\\.zip") || true
+    if [ -n "$sphaira_url" ] && download_file "$sphaira_url" "sphaira.zip" "Sphaira"; then
+        extract_and_cleanup "sphaira.zip" "Sphaira" ./switch
+        record_item "Sphaira" "$sphaira_tag"
     fi
 
     # AIO Switch Updater
