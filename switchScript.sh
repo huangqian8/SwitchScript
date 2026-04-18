@@ -569,6 +569,7 @@ EOF
 
 finalize_setup() {
     log_info "Finalizing setup..."
+    local removed_boot2_flags=0
     
     # Rename hekate payload
     find . -name "*hekate_ctcaer*" -exec mv {} payload.bin \; 2>/dev/null && \
@@ -577,6 +578,12 @@ finalize_setup() {
     
     # Remove unneeded files
     rm -f switch/haze.nro switch/reboot_to_payload.nro switch/daybreak.nro
+
+    if [ -d atmosphere/contents ]; then
+        removed_boot2_flags=$(find atmosphere/contents -type f -name "boot2.flag" -print | wc -l | tr -d ' ')
+        find atmosphere/contents -type f -name "boot2.flag" -delete
+    fi
+    log_info "Removed ${removed_boot2_flags} boot2.flag file(s) from atmosphere/contents"
     
     log_success "Setup finalization"
 }
