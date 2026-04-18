@@ -1,7 +1,11 @@
 #!/bin/bash
 set -euo pipefail
-set -x
-PS4="[${LINENO}] "
+set -E
+
+if [ "${DEBUG:-0}" = "1" ]; then
+    set -x
+    PS4='[${LINENO}] '
+fi
 
 trap 'rc=$?; echo "[ERROR] line=${LINENO} cmd=${BASH_COMMAND}" >&2; exit $rc' ERR
 
@@ -16,7 +20,6 @@ trap 'rc=$?; echo "[ERROR] line=${LINENO} cmd=${BASH_COMMAND}" >&2; exit $rc' ER
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SWITCHSD_DIR="${SCRIPT_DIR}/SwitchSD"
 readonly DESCRIPTION_FILE="${SCRIPT_DIR}/description.txt"
-readonly MAX_PARALLEL_DOWNLOADS=5
 
 # Colors for output
 readonly RED='\033[31m'
@@ -31,16 +34,147 @@ log_info() { echo -e "${YELLOW}[INFO]${NC} ${1}"; }
 
 # Description lines (name + version)
 declare -a DESCRIPTION_LINES=()
+declare -a FAILED_ITEMS=()
+declare -a REQUIRED_ITEMS=("Atmosphere" "Fusee" "Hekate + Nyx CHS")
+declare -A ITEM_STATUS=()
+declare -A FAILED_STATUS=()
+declare -A RELEASE_CACHE=()
+declare -a DOWNLOAD_QUEUE_PIDS=()
+declare -A DOWNLOAD_PID_TO_KEY=()
+declare -A DOWNLOAD_KEY_STATUS=()
+declare -A DOWNLOAD_KEY_DESC=()
+declare -A ENABLED_GROUPS=()
+
+MAX_PARALLEL_DOWNLOADS="${MAX_PARALLEL_DOWNLOADS:-5}"
+DRY_RUN=0
+ONLY_MODE=0
 
 record_item() {
     local name="$1"
     local version="${2:-unknown}"
     DESCRIPTION_LINES+=("${name} (${version})")
+    ITEM_STATUS["$name"]=1
+}
+
+record_failure() {
+    local name="$1"
+    if [ "${FAILED_STATUS["$name"]+set}" = "set" ]; then
+        return 0
+    fi
+    FAILED_STATUS["$name"]=1
+    FAILED_ITEMS+=("$name")
 }
 
 write_description_file() {
     : > "$DESCRIPTION_FILE"
     printf "%s\n" "${DESCRIPTION_LINES[@]}" >> "$DESCRIPTION_FILE"
+}
+
+validate_required_items() {
+    local missing=0
+    local item
+
+    for item in "${REQUIRED_ITEMS[@]}"; do
+        if [ "${ITEM_STATUS["$item"]+set}" != "set" ]; then
+            log_error "Missing required component: $item"
+            record_failure "$item"
+            missing=1
+        fi
+    done
+
+    if [ "$missing" -ne 0 ]; then
+        echo "Required components are missing. Aborting." >&2
+        exit 1
+    fi
+}
+
+print_failure_summary() {
+    local item
+    if [ "${#FAILED_ITEMS[@]}" -eq 0 ]; then
+        log_info "All downloads completed without recorded failures."
+        return 0
+    fi
+
+    log_info "Some downloads failed (${#FAILED_ITEMS[@]}):"
+    for item in "${FAILED_ITEMS[@]}"; do
+        echo " - $item"
+    done
+}
+
+print_usage() {
+    cat << 'EOF'
+Usage: switchScript.sh [options]
+
+Options:
+  --dry-run                Print selected plan and exit (no download/write)
+  --only <groups>          Run only selected groups (comma-separated)
+                           Groups: core,payload,homebrew,special,system,configs,finalize
+  -h, --help               Show this help
+EOF
+}
+
+group_enabled() {
+    local group="$1"
+    if [ "$ONLY_MODE" -eq 0 ]; then
+        return 0
+    fi
+    [ "${ENABLED_GROUPS["$group"]+set}" = "set" ]
+}
+
+parse_args() {
+    local groups_arg group
+    local -a _groups=()
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --dry-run)
+                DRY_RUN=1
+                ;;
+            --only)
+                shift
+                [ "$#" -gt 0 ] || {
+                    echo "Missing value for --only" >&2
+                    print_usage
+                    exit 1
+                }
+                groups_arg="$1"
+                ONLY_MODE=1
+                IFS=',' read -r -a _groups <<< "$groups_arg"
+                for group in "${_groups[@]}"; do
+                    case "$group" in
+                        core|payload|homebrew|special|system|configs|finalize)
+                            ENABLED_GROUPS["$group"]=1
+                            ;;
+                        all)
+                            ONLY_MODE=0
+                            ENABLED_GROUPS=()
+                            ;;
+                        *)
+                            echo "Unknown group for --only: $group" >&2
+                            print_usage
+                            exit 1
+                            ;;
+                    esac
+                done
+                ;;
+            -h|--help)
+                print_usage
+                exit 0
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                print_usage
+                exit 1
+                ;;
+        esac
+        shift
+    done
+}
+
+validate_runtime_options() {
+    if ! [[ "$MAX_PARALLEL_DOWNLOADS" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Invalid MAX_PARALLEL_DOWNLOADS: $MAX_PARALLEL_DOWNLOADS" >&2
+        exit 1
+    fi
 }
 
 # Cleanup and create directories
@@ -74,7 +208,82 @@ download_file() {
     done
     
     log_error "$description download"
+    record_failure "$description"
     return 1
+}
+
+reset_download_queue() {
+    DOWNLOAD_QUEUE_PIDS=()
+    DOWNLOAD_PID_TO_KEY=()
+    DOWNLOAD_KEY_STATUS=()
+    DOWNLOAD_KEY_DESC=()
+}
+
+reap_download_queue() {
+    local -a running=()
+    local pid key
+
+    for pid in "${DOWNLOAD_QUEUE_PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            running+=("$pid")
+            continue
+        fi
+
+        key="${DOWNLOAD_PID_TO_KEY["$pid"]:-}"
+        if [ -z "$key" ]; then
+            continue
+        fi
+
+        if wait "$pid"; then
+            DOWNLOAD_KEY_STATUS["$key"]="ok"
+        else
+            DOWNLOAD_KEY_STATUS["$key"]="fail"
+            record_failure "${DOWNLOAD_KEY_DESC["$key"]:-$key}"
+        fi
+
+        unset "DOWNLOAD_PID_TO_KEY[$pid]"
+    done
+
+    DOWNLOAD_QUEUE_PIDS=("${running[@]}")
+}
+
+wait_for_download_slot() {
+    while [ "${#DOWNLOAD_QUEUE_PIDS[@]}" -ge "$MAX_PARALLEL_DOWNLOADS" ]; do
+        reap_download_queue
+        sleep 0.1
+    done
+}
+
+queue_download_job() {
+    local key="$1"
+    local url="$2"
+    local output="$3"
+    local description="$4"
+    local pid
+
+    wait_for_download_slot
+    DOWNLOAD_KEY_STATUS["$key"]="pending"
+    DOWNLOAD_KEY_DESC["$key"]="$description"
+
+    (
+        download_file "$url" "$output" "$description"
+    ) &
+    pid=$!
+
+    DOWNLOAD_QUEUE_PIDS+=("$pid")
+    DOWNLOAD_PID_TO_KEY["$pid"]="$key"
+}
+
+wait_for_all_downloads() {
+    while [ "${#DOWNLOAD_QUEUE_PIDS[@]}" -gt 0 ]; do
+        reap_download_queue
+        sleep 0.1
+    done
+}
+
+download_job_succeeded() {
+    local key="$1"
+    [ "${DOWNLOAD_KEY_STATUS["$key"]:-}" = "ok" ]
 }
 
 # Extract function
@@ -119,16 +328,31 @@ check_dependencies() {
     }
 }
 
+# Get release JSON with per-repo cache
+get_release_json() {
+    local repo="$1"
+    local api="https://api.github.com/repos/$repo/releases/latest"
+    local release_json
+
+    if [ "${RELEASE_CACHE["$repo"]+set}" = "set" ]; then
+        printf '%s' "${RELEASE_CACHE["$repo"]}"
+        return 0
+    fi
+
+    release_json=$(github_api_get "$api") || return 1
+    RELEASE_CACHE["$repo"]="$release_json"
+    printf '%s' "$release_json"
+}
+
 # Get latest release asset URL + tag: prints "url|tag"
 get_latest_release_asset() {
     local repo="$1"
     local pattern="$2"
-    local api="https://api.github.com/repos/$repo/releases/latest"
     local release_json url tag
 
-    release_json=$(github_api_get "$api") || return 1
-    tag=$(echo "$release_json" | jq -r '.tag_name // "unknown"')
-    url=$(echo "$release_json" | jq -r --arg re "$pattern" '.assets[]?.browser_download_url | select(test($re))' | head -n1)
+    release_json=$(get_release_json "$repo") || return 1
+    tag=$(jq -r '.tag_name // "unknown"' <<< "$release_json")
+    url=$(jq -r --arg re "$pattern" '.assets[]?.browser_download_url | select(test($re))' <<< "$release_json" | head -n1)
 
     if [ -n "$url" ] && [ "$url" != "null" ]; then
         echo "${url}|${tag}"
@@ -150,216 +374,361 @@ github_api_get() {
 
 # Main download and setup function
 main() {
+    parse_args "$@"
+    validate_runtime_options
     check_dependencies
+
+    if [ "$DRY_RUN" -eq 1 ]; then
+        log_info "Dry-run mode enabled. No download or filesystem changes will be made."
+        if [ "$ONLY_MODE" -eq 0 ]; then
+            log_info "Selected groups: all"
+        else
+            log_info "Selected groups:"
+            group_enabled core && echo " - core"
+            group_enabled payload && echo " - payload"
+            group_enabled homebrew && echo " - homebrew"
+            group_enabled special && echo " - special"
+            group_enabled system && echo " - system"
+            group_enabled configs && echo " - configs"
+            group_enabled finalize && echo " - finalize"
+        fi
+        return 0
+    fi
+
     cleanup_and_setup
     cd "$SWITCHSD_DIR"
     
     log_info "Starting downloads..."
 
     # Core system downloads
-    log_info "Downloading core system files..."
-    
-    # Atmosphere
-    local atmosphere_url atmosphere_tag
-    IFS='|' read -r atmosphere_url atmosphere_tag < <(get_latest_release_asset "Atmosphere-NX/Atmosphere" "atmosphere.*\\.zip") || true
+    if group_enabled core; then
+        log_info "Downloading core system files..."
+        
+        # Atmosphere
+        local atmosphere_url atmosphere_tag
+        IFS='|' read -r atmosphere_url atmosphere_tag < <(get_latest_release_asset "Atmosphere-NX/Atmosphere" "atmosphere.*\\.zip") || true
 
-    local fusee_url
-    IFS='|' read -r fusee_url _ < <(get_latest_release_asset "Atmosphere-NX/Atmosphere" "fusee\\.bin") || true
+        local fusee_url
+        IFS='|' read -r fusee_url _ < <(get_latest_release_asset "Atmosphere-NX/Atmosphere" "fusee\\.bin") || true
 
-    if [ -n "$atmosphere_url" ] && download_file "$atmosphere_url" "atmosphere.zip" "Atmosphere"; then
-        extract_and_cleanup "atmosphere.zip" "Atmosphere"
-        record_item "Atmosphere" "$atmosphere_tag"
-    fi
+        if [ -n "$atmosphere_url" ] && download_file "$atmosphere_url" "atmosphere.zip" "Atmosphere"; then
+            extract_and_cleanup "atmosphere.zip" "Atmosphere"
+            record_item "Atmosphere" "$atmosphere_tag"
+        else
+            record_failure "Atmosphere"
+        fi
 
-    if [ -n "$fusee_url" ] && download_file "$fusee_url" "fusee.bin" "Fusee"; then
-        mv fusee.bin ./bootloader/payloads/
-        record_item "Fusee" "$atmosphere_tag"
-    fi
+        if [ -n "$fusee_url" ] && download_file "$fusee_url" "fusee.bin" "Fusee"; then
+            mv fusee.bin ./bootloader/payloads/
+            record_item "Fusee" "$atmosphere_tag"
+        else
+            record_failure "Fusee"
+        fi
 
-    # Hekate
-    local hekate_url hekate_tag
-    IFS='|' read -r hekate_url hekate_tag < <(get_latest_release_asset "easyworld/hekate" "hekate_ctcaer.*_sc\\.zip") || true
-    if [ -n "$hekate_url" ] && download_file "$hekate_url" "hekate.zip" "Hekate + Nyx CHS"; then
-        extract_and_cleanup "hekate.zip" "Hekate + Nyx CHS"
-        record_item "Hekate + Nyx CHS" "$hekate_tag"
-    fi
-    
-    # Sigpatches and logo
-    if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sigpatches.zip" "sigpatches.zip" "Sigpatches"; then
-        extract_and_cleanup "sigpatches.zip" "Sigpatches"
-        record_item "Sigpatches" "raw-main"
-    fi
+        # Hekate
+        local hekate_url hekate_tag
+        IFS='|' read -r hekate_url hekate_tag < <(get_latest_release_asset "easyworld/hekate" "hekate_ctcaer.*_sc\\.zip") || true
+        if [ -n "$hekate_url" ] && download_file "$hekate_url" "hekate.zip" "Hekate + Nyx CHS"; then
+            extract_and_cleanup "hekate.zip" "Hekate + Nyx CHS"
+            record_item "Hekate + Nyx CHS" "$hekate_tag"
+        else
+            record_failure "Hekate + Nyx CHS"
+        fi
+        
+        # Sigpatches and logo
+        if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/sigpatches.zip" "sigpatches.zip" "Sigpatches"; then
+            extract_and_cleanup "sigpatches.zip" "Sigpatches"
+            record_item "Sigpatches" "raw-main"
+        fi
 
-    if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/theme/logo.zip" "logo.zip" "Logo"; then
-        extract_and_cleanup "logo.zip" "Logo"
-        record_item "Logo" "raw-main"
+        if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/theme/logo.zip" "logo.zip" "Logo"; then
+            extract_and_cleanup "logo.zip" "Logo"
+            record_item "Logo" "raw-main"
+        fi
     fi
 
     # Payload downloads
-    log_info "Downloading payloads..."
-    
-    declare -A payloads=(
-        ["zdm65477730/Lockpick_RCMDecScots"]="Lockpick_RCM\.bin:Lockpick_RCM"
-        ["zdm65477730/TegraExplorer"]="TegraExplorer\.bin:TegraExplorer"
-        ["zdm65477730/CommonProblemResolver"]="CommonProblemResolver\.bin:CommonProblemResolver"
-    )
-    
-    for repo_pattern in "${!payloads[@]}"; do
-        IFS=':' read -r pattern name <<< "${payloads[$repo_pattern]}"
-        local url tag
-        IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
-        if [ -n "$url" ] && download_file "$url" "${name}.bin" "$name"; then
-            mv "${name}.bin" ./bootloader/payloads/
-            record_item "$name" "$tag"
-        fi
-    done
+    if group_enabled payload; then
+        log_info "Downloading payloads..."
+        
+        declare -A payloads=(
+            ["zdm65477730/Lockpick_RCMDecScots"]="Lockpick_RCM\.bin:Lockpick_RCM"
+            ["zdm65477730/TegraExplorer"]="TegraExplorer\.bin:TegraExplorer"
+            ["zdm65477730/CommonProblemResolver"]="CommonProblemResolver\.bin:CommonProblemResolver"
+        )
+        declare -A payload_key_name=()
+        declare -A payload_key_tag=()
+        local -a payload_keys=()
+        
+        local -a payload_repos=()
+        mapfile -t payload_repos < <(printf '%s\n' "${!payloads[@]}" | sort)
+
+        reset_download_queue
+        local payload_idx=0
+        for repo_pattern in "${payload_repos[@]}"; do
+            IFS=':' read -r pattern name <<< "${payloads[$repo_pattern]}"
+            local url tag key
+            IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
+            if [ -z "$url" ]; then
+                record_failure "$name"
+                continue
+            fi
+
+            key="payload_${payload_idx}"
+            payload_idx=$((payload_idx + 1))
+            payload_keys+=("$key")
+            payload_key_name["$key"]="$name"
+            payload_key_tag["$key"]="$tag"
+            queue_download_job "$key" "$url" "${name}.bin" "$name"
+        done
+        wait_for_all_downloads
+
+        local key
+        for key in "${payload_keys[@]}"; do
+            local name tag
+            name="${payload_key_name["$key"]}"
+            tag="${payload_key_tag["$key"]}"
+            if download_job_succeeded "$key"; then
+                mv "${name}.bin" ./bootloader/payloads/
+                record_item "$name" "$tag"
+            fi
+        done
+    fi
 
     # Homebrew applications
-    log_info "Downloading homebrew applications..."
-    
-    declare -A homebrew_apps=(
-        ["meganukebmp/Switch_90DNS_tester"]="Switch_90DNS_tester\.nro:switch/Switch_90DNS_tester/Switch_90DNS_tester.nro:Switch_90DNS_tester"
-        ["gzk47/DBIPatcher"]="DBI.*\.zhcn\.nro:switch/DBI/DBI.nro:DBI"
-        ["WerWolv/Hekate-Toolbox"]="HekateToolbox\.nro:switch/HekateToolbox/HekateToolbox.nro:HekateToolbox"
-        ["zdm65477730/NX-Activity-Log"]="NX-Activity-Log\.nro:switch/NX-Activity-Log/NX-Activity-Log.nro:NX-Activity-Log"
-        ["exelix11/SwitchThemeInjector"]="NXThemesInstaller\.nro:switch/NXThemesInstaller/NXThemesInstaller.nro:NXThemesInstaller"
-        ["J-D-K/JKSV"]="JKSV\.nro:switch/JKSV/JKSV.nro:JKSV"
-        ["CaiMiao/Tencent-switcher-GUI"]="tencent-switcher-gui\.nro:switch/tencent-switcher-gui/tencent-switcher-gui.nro:Tencent-switcher-GUI"
-        ["PoloNX/SimpleModDownloader"]="SimpleModDownloader\.nro:switch/SimpleModDownloader/SimpleModDownloader.nro:SimpleModDownloader"
-        ["dragonflylee/switchfin"]="Switchfin\.nro:switch/Switchfin/Switchfin.nro:Switchfin"
-        ["XITRIX/Moonlight-Switch"]="Moonlight-Switch\.nro:switch/Moonlight/Moonlight-Switch.nro:Moonlight"
-        ["zdm65477730/NX-Shell"]="NX-Shell\.nro:switch/NX-Shell/NX-Shell.nro:NX-Shell"
-        ["fortheusers/hb-appstore"]="appstore\.nro:switch/HB-App-Store/appstore.nro:hb-appstore"
-    )
-    
-    for repo_info in "${!homebrew_apps[@]}"; do
-        IFS=':' read -r pattern target_path name <<< "${homebrew_apps[$repo_info]}"
-        local url tag
-        IFS='|' read -r url tag < <(get_latest_release_asset "$repo_info" "$pattern") || true
-        local temp_file=$(basename "$target_path")
-        if [ -n "$url" ] && download_file "$url" "$temp_file" "$name"; then
-            mkdir -p "$(dirname "$target_path")"
-            mv "$temp_file" "$target_path"
-            record_item "$name" "$tag"
-        fi
-    done
+    if group_enabled homebrew; then
+        log_info "Downloading homebrew applications..."
+        
+        declare -A homebrew_apps=(
+            ["meganukebmp/Switch_90DNS_tester"]="Switch_90DNS_tester\.nro:switch/Switch_90DNS_tester/Switch_90DNS_tester.nro:Switch_90DNS_tester"
+            ["gzk47/DBIPatcher"]="DBI.*\.zhcn\.nro:switch/DBI/DBI.nro:DBI"
+            ["WerWolv/Hekate-Toolbox"]="HekateToolbox\.nro:switch/HekateToolbox/HekateToolbox.nro:HekateToolbox"
+            ["zdm65477730/NX-Activity-Log"]="NX-Activity-Log\.nro:switch/NX-Activity-Log/NX-Activity-Log.nro:NX-Activity-Log"
+            ["exelix11/SwitchThemeInjector"]="NXThemesInstaller\.nro:switch/NXThemesInstaller/NXThemesInstaller.nro:NXThemesInstaller"
+            ["J-D-K/JKSV"]="JKSV\.nro:switch/JKSV/JKSV.nro:JKSV"
+            ["CaiMiao/Tencent-switcher-GUI"]="tencent-switcher-gui\.nro:switch/tencent-switcher-gui/tencent-switcher-gui.nro:Tencent-switcher-GUI"
+            ["PoloNX/SimpleModDownloader"]="SimpleModDownloader\.nro:switch/SimpleModDownloader/SimpleModDownloader.nro:SimpleModDownloader"
+            ["dragonflylee/switchfin"]="Switchfin\.nro:switch/Switchfin/Switchfin.nro:Switchfin"
+            ["XITRIX/Moonlight-Switch"]="Moonlight-Switch\.nro:switch/Moonlight/Moonlight-Switch.nro:Moonlight"
+            ["zdm65477730/NX-Shell"]="NX-Shell\.nro:switch/NX-Shell/NX-Shell.nro:NX-Shell"
+            ["fortheusers/hb-appstore"]="appstore\.nro:switch/HB-App-Store/appstore.nro:hb-appstore"
+        )
+        declare -A homebrew_key_name=()
+        declare -A homebrew_key_tag=()
+        declare -A homebrew_key_target=()
+        declare -A homebrew_key_file=()
+        local -a homebrew_keys=()
+        
+        local -a homebrew_repos=()
+        mapfile -t homebrew_repos < <(printf '%s\n' "${!homebrew_apps[@]}" | sort)
+
+        reset_download_queue
+        local homebrew_idx=0
+        for repo_info in "${homebrew_repos[@]}"; do
+            IFS=':' read -r pattern target_path name <<< "${homebrew_apps[$repo_info]}"
+            local url tag key temp_file
+            IFS='|' read -r url tag < <(get_latest_release_asset "$repo_info" "$pattern") || true
+            if [ -z "$url" ]; then
+                record_failure "$name"
+                continue
+            fi
+
+            key="homebrew_${homebrew_idx}"
+            homebrew_idx=$((homebrew_idx + 1))
+            temp_file=".download_${key}_$(basename "$target_path")"
+
+            homebrew_keys+=("$key")
+            homebrew_key_name["$key"]="$name"
+            homebrew_key_tag["$key"]="$tag"
+            homebrew_key_target["$key"]="$target_path"
+            homebrew_key_file["$key"]="$temp_file"
+            queue_download_job "$key" "$url" "$temp_file" "$name"
+        done
+        wait_for_all_downloads
+
+        local key
+        for key in "${homebrew_keys[@]}"; do
+            local name tag target_path temp_file
+            name="${homebrew_key_name["$key"]}"
+            tag="${homebrew_key_tag["$key"]}"
+            target_path="${homebrew_key_target["$key"]}"
+            temp_file="${homebrew_key_file["$key"]}"
+            if download_job_succeeded "$key"; then
+                mkdir -p "$(dirname "$target_path")"
+                mv "$temp_file" "$target_path"
+                record_item "$name" "$tag"
+            fi
+        done
+    fi
 
     # Special downloads with custom handling
-    log_info "Downloading special packages..."
-    
-    # Awoo Installer
-    local awoo_url awoo_tag
-    IFS='|' read -r awoo_url awoo_tag < <(get_latest_release_asset "Huntereb/Awoo-Installer" "Awoo-Installer\\.zip") || true
-    if [ -n "$awoo_url" ] && download_file "$awoo_url" "Awoo-Installer.zip" "Awoo Installer"; then
-        extract_and_cleanup "Awoo-Installer.zip" "Awoo Installer"
-        record_item "Awoo Installer" "$awoo_tag"
-    fi
+    if group_enabled special; then
+        log_info "Downloading special packages..."
+        
+        # Awoo Installer
+        local awoo_url awoo_tag
+        IFS='|' read -r awoo_url awoo_tag < <(get_latest_release_asset "Huntereb/Awoo-Installer" "Awoo-Installer\\.zip") || true
+        if [ -n "$awoo_url" ] && download_file "$awoo_url" "Awoo-Installer.zip" "Awoo Installer"; then
+            extract_and_cleanup "Awoo-Installer.zip" "Awoo Installer"
+            record_item "Awoo Installer" "$awoo_tag"
+        fi
 
-    # Sphaira - homebrew menu
-    local sphaira_url sphaira_tag
-    IFS='|' read -r sphaira_url sphaira_tag < <(get_latest_release_asset "ITotalJustice/sphaira" "sphaira\\.zip") || true
-    if [ -n "$sphaira_url" ] && download_file "$sphaira_url" "sphaira.zip" "Sphaira"; then
-        extract_and_cleanup "sphaira.zip" "Sphaira"
-        record_item "Sphaira" "$sphaira_tag"
-    fi
+        # Sphaira - homebrew menu
+        local sphaira_url sphaira_tag
+        IFS='|' read -r sphaira_url sphaira_tag < <(get_latest_release_asset "ITotalJustice/sphaira" "sphaira\\.zip") || true
+        if [ -n "$sphaira_url" ] && download_file "$sphaira_url" "sphaira.zip" "Sphaira"; then
+            extract_and_cleanup "sphaira.zip" "Sphaira"
+            record_item "Sphaira" "$sphaira_tag"
+        fi
 
-    # AIO Switch Updater
-    local aio_url aio_tag
-    IFS='|' read -r aio_url aio_tag < <(get_latest_release_asset "HamletDuFromage/aio-switch-updater" "aio-switch-updater\\.zip") || true
-    if [ -n "$aio_url" ] && download_file "$aio_url" "aio-switch-updater.zip" "aio-switch-updater"; then
-        extract_and_cleanup "aio-switch-updater.zip" "aio-switch-updater"
-        record_item "aio-switch-updater" "$aio_tag"
-    fi
+        # AIO Switch Updater
+        local aio_url aio_tag
+        IFS='|' read -r aio_url aio_tag < <(get_latest_release_asset "HamletDuFromage/aio-switch-updater" "aio-switch-updater\\.zip") || true
+        if [ -n "$aio_url" ] && download_file "$aio_url" "aio-switch-updater.zip" "aio-switch-updater"; then
+            extract_and_cleanup "aio-switch-updater.zip" "aio-switch-updater"
+            record_item "aio-switch-updater" "$aio_tag"
+        fi
 
-    # Wiliwili
-    local wiliwili_url wiliwili_tag
-    IFS='|' read -r wiliwili_url wiliwili_tag < <(get_latest_release_asset "xfangfang/wiliwili" "wiliwili-NintendoSwitch\\.zip") || true
-    if [ -n "$wiliwili_url" ] && download_file "$wiliwili_url" "wiliwili-NintendoSwitch.zip" "wiliwili"; then
-        extract_and_cleanup "wiliwili-NintendoSwitch.zip" "wiliwili"
-        [ -d wiliwili ] && mv wiliwili/wiliwili.nro ./switch/wiliwili/ && rm -rf wiliwili
-        record_item "wiliwili" "$wiliwili_tag"
-    fi
+        # Wiliwili
+        local wiliwili_url wiliwili_tag
+        IFS='|' read -r wiliwili_url wiliwili_tag < <(get_latest_release_asset "xfangfang/wiliwili" "wiliwili-NintendoSwitch\\.zip") || true
+        if [ -n "$wiliwili_url" ] && download_file "$wiliwili_url" "wiliwili-NintendoSwitch.zip" "wiliwili"; then
+            extract_and_cleanup "wiliwili-NintendoSwitch.zip" "wiliwili"
+            [ -d wiliwili ] && mv wiliwili/wiliwili.nro ./switch/wiliwili/ && rm -rf wiliwili
+            record_item "wiliwili" "$wiliwili_tag"
+        fi
 
-    # Daybreak
-    if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/daybreak_x.zip" "daybreak_x.zip" "daybreak"; then
-        extract_and_cleanup "daybreak_x.zip" "daybreak"
-        record_item "daybreak" "raw-main"
-    fi
-    
-    # Theme patches
-    if git clone --depth 1 https://github.com/exelix11/theme-patches 2>/dev/null; then
-        log_success "theme-patches download"
-        local theme_patch_version
-        theme_patch_version=$(git -C theme-patches rev-parse --short HEAD 2>/dev/null || echo "unknown")
-        mkdir -p themes
-        [ -d theme-patches/systemPatches ] && mv theme-patches/systemPatches ./themes/
-        rm -rf theme-patches
-        record_item "theme-patches" "$theme_patch_version"
-    else
-        log_error "theme-patches download"
+        # Daybreak
+        if download_file "https://raw.githubusercontent.com/huangqian8/SwitchPlugins/main/plugins/daybreak_x.zip" "daybreak_x.zip" "daybreak"; then
+            extract_and_cleanup "daybreak_x.zip" "daybreak"
+            record_item "daybreak" "raw-main"
+        fi
+        
+        # Theme patches
+        if git clone --depth 1 https://github.com/exelix11/theme-patches 2>/dev/null; then
+            log_success "theme-patches download"
+            local theme_patch_version
+            theme_patch_version=$(git -C theme-patches rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            mkdir -p themes
+            [ -d theme-patches/systemPatches ] && mv theme-patches/systemPatches ./themes/
+            rm -rf theme-patches
+            record_item "theme-patches" "$theme_patch_version"
+        else
+            log_error "theme-patches download"
+            record_failure "theme-patches"
+        fi
     fi
 
     # System modules and overlays
-    log_info "Downloading system modules and overlays..."
-    
-    declare -A system_modules=(
-        ["zdm65477730/nx-ovlloader"]="nx-ovlloader\.zip:nx-ovlloader"
-        ["zdm65477730/Ultrahand-Overlay"]="Ultrahand\.zip:Ultrahand-Overlay"
-        ["zdm65477730/EdiZon-Overlay"]="EdiZon\.zip:EdiZon"
-        ["zdm65477730/ovl-sysmodules"]="ovl-sysmodules\.zip:ovl-sysmodules"
-        ["zdm65477730/Status-Monitor-Overlay"]="StatusMonitor\.zip:StatusMonitor"
-        ["zdm65477730/ReverseNX-RT"]="ReverseNX-RT\.zip:ReverseNX-RT"
-        ["zdm65477730/ldn_mitm"]="ldn_mitm\.zip:ldn_mitm"
-        ["zdm65477730/QuickNTP"]="QuickNTP\.zip:QuickNTP"
-        ["zdm65477730/Fizeau"]="Fizeau\.zip:Fizeau"
-        ["zdm65477730/sys-patch"]="sys-patch\.zip:sys-patch"
-        ["zdm65477730/sys-clk"]="sys-clk.*\.zip:sys-clk"
-        ["ndeadly/MissionControl"]="MissionControl.*\.zip:MissionControl"
-    )
-    
-    for repo_pattern in "${!system_modules[@]}"; do
-        IFS=':' read -r pattern name <<< "${system_modules[$repo_pattern]}"
-        local url tag
-        IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
-        if [ -n "$url" ] && download_file "$url" "${name}.zip" "$name"; then
-            extract_and_cleanup "${name}.zip" "$name"
-            record_item "$name" "$tag"
+    if group_enabled system; then
+        log_info "Downloading system modules and overlays..."
+        
+        declare -A system_modules=(
+            ["zdm65477730/nx-ovlloader"]="nx-ovlloader\.zip:nx-ovlloader"
+            ["zdm65477730/Ultrahand-Overlay"]="Ultrahand\.zip:Ultrahand-Overlay"
+            ["zdm65477730/EdiZon-Overlay"]="EdiZon\.zip:EdiZon"
+            ["zdm65477730/ovl-sysmodules"]="ovl-sysmodules\.zip:ovl-sysmodules"
+            ["zdm65477730/Status-Monitor-Overlay"]="StatusMonitor\.zip:StatusMonitor"
+            ["zdm65477730/ReverseNX-RT"]="ReverseNX-RT\.zip:ReverseNX-RT"
+            ["zdm65477730/ldn_mitm"]="ldn_mitm\.zip:ldn_mitm"
+            ["zdm65477730/QuickNTP"]="QuickNTP\.zip:QuickNTP"
+            ["zdm65477730/Fizeau"]="Fizeau\.zip:Fizeau"
+            ["zdm65477730/sys-patch"]="sys-patch\.zip:sys-patch"
+            ["zdm65477730/sys-clk"]="sys-clk.*\.zip:sys-clk"
+            ["ndeadly/MissionControl"]="MissionControl.*\.zip:MissionControl"
+        )
+        declare -A system_key_name=()
+        declare -A system_key_tag=()
+        local -a system_keys=()
+        
+        local -a system_repos=()
+        mapfile -t system_repos < <(printf '%s\n' "${!system_modules[@]}" | sort)
+
+        reset_download_queue
+        local system_idx=0
+        for repo_pattern in "${system_repos[@]}"; do
+            IFS=':' read -r pattern name <<< "${system_modules[$repo_pattern]}"
+            local url tag key
+            IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
+            if [ -z "$url" ]; then
+                record_failure "$name"
+                continue
+            fi
+
+            key="system_${system_idx}"
+            system_idx=$((system_idx + 1))
+            system_keys+=("$key")
+            system_key_name["$key"]="$name"
+            system_key_tag["$key"]="$tag"
+            queue_download_job "$key" "$url" "${name}.zip" "$name"
+        done
+        wait_for_all_downloads
+
+        local key
+        for key in "${system_keys[@]}"; do
+            local name tag
+            name="${system_key_name["$key"]}"
+            tag="${system_key_tag["$key"]}"
+            if download_job_succeeded "$key"; then
+                extract_and_cleanup "${name}.zip" "$name"
+                record_item "$name" "$tag"
+            fi
+        done
+        
+        # Emuiibo (special handling)
+        local emuiibo_url emuiibo_tag
+        IFS='|' read -r emuiibo_url emuiibo_tag < <(get_latest_release_asset "XorTroll/emuiibo" "emuiibo\\.zip") || true
+        if [ -n "$emuiibo_url" ] && download_file "$emuiibo_url" "emuiibo.zip" "emuiibo"; then
+            extract_and_cleanup "emuiibo.zip" "emuiibo"
+            [ -d SdOut ] && cp -rf SdOut/* ./ && rm -rf SdOut
+            record_item "emuiibo" "$emuiibo_tag"
         fi
-    done
-    
-    # Emuiibo (special handling)
-    local emuiibo_url emuiibo_tag
-    IFS='|' read -r emuiibo_url emuiibo_tag < <(get_latest_release_asset "XorTroll/emuiibo" "emuiibo\\.zip") || true
-    if [ -n "$emuiibo_url" ] && download_file "$emuiibo_url" "emuiibo.zip" "emuiibo"; then
-        extract_and_cleanup "emuiibo.zip" "emuiibo"
-        [ -d SdOut ] && cp -rf SdOut/* ./ && rm -rf SdOut
-        record_item "emuiibo" "$emuiibo_tag"
     fi
     
     # OC Toolkit (dual download)
-    local oc_info oc_tag kip_url toolkit_url
-    oc_info=$(curl -fsSL https://api.github.com/repos/halop/OC_Toolkit_SC_EOS/releases/latest)
-    oc_tag=$(echo "$oc_info" | jq -r '.tag_name // "unknown"')
-    kip_url=$(echo "$oc_info" | jq -r '.assets[]?.browser_download_url | select(test("kip\\.zip"))' | head -n1)
-    toolkit_url=$(echo "$oc_info" | jq -r '.assets[]?.browser_download_url | select(test("OC\\.Toolkit\\.u\\.zip"))' | head -n1)
+    if group_enabled special; then
+        local oc_info oc_tag kip_url toolkit_url
+        oc_info=$(get_release_json "halop/OC_Toolkit_SC_EOS") || true
+        if [ -n "$oc_info" ]; then
+            oc_tag=$(jq -r '.tag_name // "unknown"' <<< "$oc_info")
+            kip_url=$(jq -r '.assets[]?.browser_download_url | select(test("kip\\.zip"))' <<< "$oc_info" | head -n1)
+            toolkit_url=$(jq -r '.assets[]?.browser_download_url | select(test("OC\\.Toolkit\\.u\\.zip"))' <<< "$oc_info" | head -n1)
+        else
+            oc_tag=""
+            kip_url=""
+            toolkit_url=""
+        fi
 
-    if [ -n "$kip_url" ] && [ -n "$toolkit_url" ] && download_file "$kip_url" "kip.zip" "OC Toolkit KIP" && download_file "$toolkit_url" "OC.Toolkit.u.zip" "OC Toolkit"; then
-        log_success "OC_Toolkit_SC_EOS download"
-        extract_and_cleanup "kip.zip" "OC Toolkit KIP" "./atmosphere/kips/"
-        extract_and_cleanup "OC.Toolkit.u.zip" "OC Toolkit" "./switch/.packages/"
-        record_item "OC_Toolkit_SC_EOS" "$oc_tag"
-    else
-        log_error "OC_Toolkit_SC_EOS download"
+        if [ -n "$kip_url" ] && [ -n "$toolkit_url" ] && download_file "$kip_url" "kip.zip" "OC Toolkit KIP" && download_file "$toolkit_url" "OC.Toolkit.u.zip" "OC Toolkit"; then
+            log_success "OC_Toolkit_SC_EOS download"
+            extract_and_cleanup "kip.zip" "OC Toolkit KIP" "./atmosphere/kips/"
+            extract_and_cleanup "OC.Toolkit.u.zip" "OC Toolkit" "./switch/.packages/"
+            record_item "OC_Toolkit_SC_EOS" "$oc_tag"
+        else
+            log_error "OC_Toolkit_SC_EOS download"
+            record_failure "OC_Toolkit_SC_EOS"
+        fi
     fi
 
+    if group_enabled core; then
+        validate_required_items
+    fi
+    print_failure_summary
+
     # Write runtime description (with versions)
-    write_description_file
+    if group_enabled core || group_enabled payload || group_enabled homebrew || group_enabled special || group_enabled system; then
+        write_description_file
+    fi
 
     # Generate configuration files
-    generate_configs
+    if group_enabled configs; then
+        generate_configs
+    fi
     
     # Cleanup and finalization
-    finalize_setup
+    if group_enabled finalize; then
+        finalize_setup
+    fi
     
     log_info "Setup completed successfully!"
     echo -e "\n${GREEN}Your Switch SD card is prepared!${NC}"
