@@ -1,0 +1,15 @@
+# 屏蔽任天堂服务器
+127.0.0.1 *nintendo.*
+127.0.0.1 *nintendo-europe.com
+127.0.0.1 *nintendoswitch.*
+127.0.0.1 ads.doubleclick.net
+127.0.0.1 s.ytimg.com
+127.0.0.1 ad.youtube.com
+127.0.0.1 ads.youtube.com
+127.0.0.1 clients1.google.com
+207.246.121.77 *conntest.nintendowifi.net
+207.246.121.77 *ctest.cdn.nintendo.net
+69.25.139.140 *ctest.cdn.n.nintendoswitch.cn
+95.216.149.205 *conntest.nintendowifi.net
+95.216.149.205 *ctest.cdn.nintendo.net
+95.216.149.205 *90dns.test

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 set -E
 
@@ -20,6 +20,7 @@ trap 'rc=$?; echo "[ERROR] line=${LINENO} cmd=${BASH_COMMAND}" >&2; exit $rc' ER
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SWITCHSD_DIR="${SCRIPT_DIR}/SwitchSD"
 readonly DESCRIPTION_FILE="${SCRIPT_DIR}/description.txt"
+readonly TEMPLATE_DIR="${SCRIPT_DIR}/templates"
 
 # Colors for output
 readonly RED='\033[31m'
@@ -31,6 +32,12 @@ readonly NC='\033[0m' # No Color
 log_success() { echo -e "${1} ${GREEN}success${NC}."; }
 log_error() { echo -e "${1} ${RED}failed${NC}."; }
 log_info() { echo -e "${YELLOW}[INFO]${NC} ${1}"; }
+
+if [ -z "${BASH_VERSINFO[0]+set}" ] || [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+    echo "Bash 4 or newer is required. Current version: ${BASH_VERSION:-unknown}" >&2
+    echo "On macOS, install a newer bash and run this script with it." >&2
+    exit 1
+fi
 
 # Description lines (name + version)
 declare -a DESCRIPTION_LINES=()
@@ -177,14 +184,26 @@ validate_runtime_options() {
     fi
 }
 
+create_switchsd_dirs() {
+    mkdir -p "$SWITCHSD_DIR"/{atmosphere/{config,hosts,contents/{420000000007E51Anx-ovlloader,0000000000534C56ReverseNX-RT,4200000000000010ldn_mitm,0100000000000352emuiibo,0100000000000F12Fizeau,4200000000000000sys-tune,420000000000000Bsys-patch,010000000000bd00MissionControl,00FF0000636C6BFFsys-clk},kips},bootloader/payloads,config/ultrahand/lang,switch/{Switch_90DNS_tester,DBI,NX-Shell,HB-App-Store,HekateToolbox,JKSV,Moonlight,NXThemesInstaller,SimpleModDownloader,Switchfin,tencent-switcher-gui,wiliwili,NX-Activity-Log,Sphaira,.overlays,.packages}}
+}
+
 # Cleanup and create directories
 cleanup_and_setup() {
     log_info "Setting up directories..."
     [ -d "$SWITCHSD_DIR" ] && rm -rf "$SWITCHSD_DIR"
     [ -e "$DESCRIPTION_FILE" ] && rm -f "$DESCRIPTION_FILE"
-    
-    # Create directory structure in batch
-    mkdir -p "$SWITCHSD_DIR"/{atmosphere/{config,hosts,contents/{420000000007E51Anx-ovlloader,0000000000534C56ReverseNX-RT,4200000000000010ldn_mitm,0100000000000352emuiibo,0100000000000F12Fizeau,4200000000000000sys-tune,420000000000000Bsys-patch,010000000000bd00MissionControl,00FF0000636C6BFFsys-clk},kips},bootloader/payloads,config/ultrahand/lang,switch/{Switch_90DNS_tester,DBI,NX-Shell,HB-App-Store,HekateToolbox,JKSV,Moonlight,NXThemesInstaller,SimpleModDownloader,Switchfin,tencent-switcher-gui,wiliwili,NX-Activity-Log,Sphaira,.overlays,.packages}}
+    create_switchsd_dirs
+}
+
+setup_workspace() {
+    if [ "$ONLY_MODE" -eq 0 ]; then
+        cleanup_and_setup
+        return 0
+    fi
+
+    log_info "Setting up directories without removing existing SwitchSD contents..."
+    create_switchsd_dirs
 }
 # Download function with retry logic
 download_file() {
@@ -323,9 +342,55 @@ check_dependencies() {
     done
 
     [ "$missing" -eq 0 ] || {
-        echo "Please install required dependencies first." >&2
+        echo "Please install required dependencies first: curl jq unzip git." >&2
         exit 1
     }
+}
+
+copy_template() {
+    local src="$1"
+    local dest="$2"
+
+    if [ ! -f "$TEMPLATE_DIR/$src" ]; then
+        log_error "Missing template: $src"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+    cp "$TEMPLATE_DIR/$src" "$dest"
+}
+
+validate_final_structure() {
+    log_info "Validating final SwitchSD structure..."
+
+    local missing=0
+    local -a required_paths=(
+        "atmosphere/package3"
+        "bootloader/hekate_ipl.ini"
+        "exosphere.ini"
+        "boot.ini"
+        "atmosphere/config/override_config.ini"
+        "atmosphere/config/system_settings.ini"
+        "atmosphere/hosts/emummc.txt"
+        "atmosphere/hosts/sysmmc.txt"
+        "bootloader/payloads/fusee.bin"
+        "payload.bin"
+    )
+    local path
+
+    for path in "${required_paths[@]}"; do
+        if [ ! -e "$path" ]; then
+            log_error "Missing expected file: $path"
+            missing=1
+        fi
+    done
+
+    if [ "$missing" -ne 0 ]; then
+        echo "Final structure validation failed." >&2
+        exit 1
+    fi
+
+    log_success "Final structure validation"
 }
 
 # Get release JSON with per-repo cache
@@ -395,7 +460,7 @@ main() {
         return 0
     fi
 
-    cleanup_and_setup
+    setup_workspace
     cd "$SWITCHSD_DIR"
     
     log_info "Starting downloads..."
@@ -729,6 +794,10 @@ main() {
     if group_enabled finalize; then
         finalize_setup
     fi
+
+    if group_enabled core && group_enabled configs && group_enabled finalize; then
+        validate_final_structure
+    fi
     
     log_info "Setup completed successfully!"
     echo -e "\n${GREEN}Your Switch SD card is prepared!${NC}"
@@ -737,201 +806,14 @@ main() {
 # Configuration generation functions
 generate_configs() {
     log_info "Generating configuration files..."
-    
-    # description.txt is generated dynamically in main() via write_description_file()
 
-    # Generate hekate_ipl.ini
-    cat > ./bootloader/hekate_ipl.ini << 'EOF'
-[config]
-autoboot=0
-autoboot_list=0
-bootwait=3
-backlight=100
-noticker=0
-autohosoff=1
-autonogc=1
-updater2p=0
-bootprotect=0
-
-[CFW (emuMMC)]
-emummcforce=1
-fss0=atmosphere/package3
-kip1patch=nosigchk
-atmosphere=1
-icon=bootloader/res/icon_Atmosphere_emunand.bmp
-id=cfw-emu
-
-[CFW (sysMMC)]
-emummc_force_disable=1
-fss0=atmosphere/package3
-kip1patch=nosigchk
-atmosphere=1
-icon=bootloader/res/icon_Atmosphere_sysnand.bmp
-id=cfw-sys
-
-[Stock SysNAND]
-emummc_force_disable=1
-fss0=atmosphere/package3
-icon=bootloader/res/icon_stock.bmp
-stock=1
-id=ofw-sys
-EOF
-    
-    # Generate exosphere.ini
-    cat > ./exosphere.ini << 'EOF'
-[exosphere]
-debugmode=1
-debugmode_user=0
-disable_user_exception_handlers=0
-enable_user_pmu_access=0
-; 控制真实系统启用隐身模式。
-blank_prodinfo_sysmmc=1
-; 控制虚拟系统启用隐身模式。
-blank_prodinfo_emummc=1
-allow_writing_to_cal_sysmmc=0
-log_port=0
-log_baud_rate=115200
-log_inverted=0
-EOF
-    
-    # Generate DNS blocking files
-    local dns_content='# 屏蔽任天堂服务器
-127.0.0.1 *nintendo.*
-127.0.0.1 *nintendo-europe.com
-127.0.0.1 *nintendoswitch.*
-127.0.0.1 ads.doubleclick.net
-127.0.0.1 s.ytimg.com
-127.0.0.1 ad.youtube.com
-127.0.0.1 ads.youtube.com
-127.0.0.1 clients1.google.com
-207.246.121.77 *conntest.nintendowifi.net
-207.246.121.77 *ctest.cdn.nintendo.net
-69.25.139.140 *ctest.cdn.n.nintendoswitch.cn
-95.216.149.205 *conntest.nintendowifi.net
-95.216.149.205 *ctest.cdn.nintendo.net
-95.216.149.205 *90dns.test'
-    
-    echo "$dns_content" > ./atmosphere/hosts/emummc.txt
-    echo "$dns_content" > ./atmosphere/hosts/sysmmc.txt
-    
-    # Generate boot.ini
-    cat > ./boot.ini << 'EOF'
-[payload]
-file=payload.bin
-EOF
-    
-    # Generate override_config.ini
-    cat > ./atmosphere/config/override_config.ini << 'EOF'
-[hbl_config]
-program_id_0=010000000000100D
-override_address_space=39_bit
-; 按住R键点击相册进入HBL自制软件界面。
-override_key_0=R
-EOF
-    
-    # Generate system_settings.ini
-    cat > ./atmosphere/config/system_settings.ini << 'EOF'
-; =============================================
-; Atmosphere 防封禁核心配置文件
-; =============================================
-
-[eupld]
-; 禁用错误报告上传
-upload_enabled = u8!0x0
-
-[ro]
-; 放宽NRO验证限制，便于自制软件运行
-ease_nro_restriction = u8!0x1
-
-[atmosphere]
-; 金手指默认关闭，按需开启更安全
-dmnt_cheats_enabled_by_default = u8!0x0
-; 崩溃10秒后自动重启 (10000毫秒)
-fatal_auto_reboot_interval = u64!0x2710
-; 启用DNS屏蔽，阻止连接任天堂服务器
-enable_dns_mitm = u8!0x1
-add_defaults_to_dns_hosts = u8!0x1
-; 虚拟系统使用外部蓝牙配对
-enable_external_bluetooth_db = u8!0x1
-
-[usb]
-; 强制开启USB 3.0
-usb30_force_enabled = u8!0x1
-
-[tc]
-; 温控设置 - 保持默认即可
-sleep_enabled = u8!0x0
-
-; =============================================
-; 🛡 防封禁核心配置 - 禁用所有任天堂服务
-; =============================================
-
-[bgtc]
-; 禁用所有后台任务
-enable_halfawake = u32!0x0
-minimum_interval_normal = u32!0x7FFFFFFF
-minimum_interval_save = u32!0x7FFFFFFF
-
-[npns]
-; 禁用新闻推送服务
-background_processing = u8!0x0
-sleep_periodic_interval = u32!0x7FFFFFFF
-
-[ns.notification]
-; 完全禁用系统更新检查和服务通信
-enable_download_task_list = u8!0x0
-enable_network_update = u8!0x0
-enable_request_on_cold_boot = u8!0x0
-retry_interval_min = u32!0x7FFFFFFF
-
-[account]
-; 禁用账户验证和许可证检查
-na_required_for_network_service = u8!0x0
-na_license_verification_enabled = u8!0x0
-
-[capsrv]
-; 禁用截图和录像验证
-enable_album_screenshot_filedata_verification = u8!0x0
-enable_album_movie_filehash_verification = u8!0x0
-
-[friends]
-; 禁用好友后台服务
-background_processing = u8!0x0
-
-[prepo]
-; 禁用数据统计上报
-transmission_interval_min = u32!0x7FFFFFFF
-save_system_report = u8!0x0
-
-[olsc]
-; 禁用云存档服务
-default_auto_upload_global_setting = u8!0x0
-default_auto_download_global_setting = u8!0x0
-
-[ns.rights]
-; 跳过账户验证（重要权限检查）
-skip_account_validation_on_rights_check = u8!0x1
-
-; =============================================
-; ⚡ 性能优化配置
-; =============================================
-
-[account.daemon]
-; 延长账户服务间隔
-background_awaking_periodicity = u32!0x7FFFFFFF
-
-[notification.presenter]
-; 禁用通知重试
-connection_retry_count = u32!0x0
-
-[systemupdate]
-; 禁用系统更新重试
-bgnup_retry_seconds = u32!0x7FFFFFFF
-
-[pctl]
-; 延长家长控制检查间隔
-intermittent_task_interval_seconds = u32!0x7FFFFFFF
-EOF
+    copy_template "hekate_ipl.ini" "./bootloader/hekate_ipl.ini"
+    copy_template "exosphere.ini" "./exosphere.ini"
+    copy_template "dns_mitm.txt" "./atmosphere/hosts/emummc.txt"
+    copy_template "dns_mitm.txt" "./atmosphere/hosts/sysmmc.txt"
+    copy_template "boot.ini" "./boot.ini"
+    copy_template "override_config.ini" "./atmosphere/config/override_config.ini"
+    copy_template "system_settings.ini" "./atmosphere/config/system_settings.ini"
     
     log_success "Configuration files generation"
 }
@@ -939,11 +821,19 @@ EOF
 finalize_setup() {
     log_info "Finalizing setup..."
     local removed_boot2_flags=0
+    local hekate_payload
     
     # Rename hekate payload
-    find . -name "*hekate_ctcaer*" -exec mv {} payload.bin \; 2>/dev/null && \
-        log_success "Rename hekate_ctcaer_*.bin to payload.bin" || \
+    hekate_payload=$(find . -maxdepth 1 -type f -name "hekate_ctcaer*.bin" -print -quit)
+    if [ -n "$hekate_payload" ]; then
+        mv "$hekate_payload" payload.bin
+        log_success "Rename hekate_ctcaer_*.bin to payload.bin"
+    elif [ -f payload.bin ]; then
+        log_info "payload.bin already exists."
+    else
         log_error "Rename hekate_ctcaer_*.bin to payload.bin"
+        record_failure "payload.bin"
+    fi
     
     # Remove unneeded files
     rm -f switch/haze.nro switch/reboot_to_payload.nro switch/daybreak.nro

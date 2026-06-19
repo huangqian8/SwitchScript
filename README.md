@@ -64,11 +64,16 @@
     - [x] 删除 `switch` 文件夹中 `daybreak.nro`
     - [x] 删除 `switch` 文件夹中 `reboot_to_payload.nro`
 
-## 使用说明（仅适用于 `Linux` ，科学上网环境）:
-  - 安装 `jq` 工具
+## 使用说明（仅适用于 `Linux` / `Bash 4+` ，科学上网环境）:
+  - 安装依赖：`bash 4+`、`curl`、`jq`、`unzip`、`git`
   - 运行脚本（switchScript.sh）
+  - 可选参数：
+    - `--dry-run`：只显示将执行的分组，不下载或写入文件
+    - `--only <groups>`：只运行指定分组，例如 `--only core,configs,finalize`
+  - 注意：全量运行会清空并重建 `SwitchSD`；使用 `--only` 时会保留已有 `SwitchSD` 内容，仅补齐目录并执行指定分组。
 
 ## 更新日志
+- 2026-06-20 模板化配置文件，优化 `--only` 模式、`Bash 4+` 检查及最终结构校验
 - 2026-04-18 添加 `Sphaira` 启动器
 - 2026-03-01 精简优化 `switchScript.sh`
 - 2025-12-28 去除 `Zing` 和 `sys-tune`，更新 `DBI` 、 `Awoo Installer` 及 `emuiibo` 仓库地址
