@@ -64,16 +64,26 @@
     - [x] 删除 `switch` 文件夹中 `daybreak.nro`
     - [x] 删除 `switch` 文件夹中 `reboot_to_payload.nro`
 
-## 使用说明（仅适用于 `Linux` / `Bash 4+` ，科学上网环境）:
-  - 安装依赖：`bash 4+`、`curl`、`jq`、`unzip`、`git`
-  - 运行脚本（switchScript.sh）
+## 使用说明（需要 `Bash 3.2+`，建议科学上网环境）:
+  - 安装依赖：
+    - `macOS`：`brew install bash curl jq unzip git`
+    - `Debian / Ubuntu / WSL`：`sudo apt install bash curl jq unzip git`
+    - `Fedora`：`sudo dnf install bash curl jq unzip git`
+    - `Arch Linux`：`sudo pacman -S bash curl jq unzip git`
+  - 运行脚本：
+    - `Linux / WSL`：`bash switchScript.sh`
+    - `macOS Apple Silicon`：`/opt/homebrew/bin/bash switchScript.sh`
+    - `macOS Intel`：`/usr/local/bin/bash switchScript.sh`
+    - 如果已添加可执行权限，也可以运行：`chmod +x switchScript.sh && ./switchScript.sh`
+  - 说明：脚本兼容 macOS 默认 `/bin/bash` 3.2，也兼容常见 Linux / WSL 环境。
+  - 可选：如果频繁遇到 GitHub API 限流或部分插件下载失败，可设置 `GITHUB_TOKEN` 后再运行脚本。
   - 可选参数：
     - `--dry-run`：只显示将执行的分组，不下载或写入文件
     - `--only <groups>`：只运行指定分组，例如 `--only core,configs,finalize`
   - 注意：全量运行会清空并重建 `SwitchSD`；使用 `--only` 时会保留已有 `SwitchSD` 内容，仅补齐目录并执行指定分组。
 
 ## 更新日志
-- 2026-06-20 模板化配置文件，优化 `--only` 模式、`Bash 4+` 检查及最终结构校验
+- 2026-06-20 模板化配置文件，优化 `--only` 模式，兼容 `Bash 3.2+` 并增加最终结构校验
 - 2026-04-18 添加 `Sphaira` 启动器
 - 2026-03-01 精简优化 `switchScript.sh`
 - 2025-12-28 去除 `Zing` 和 `sys-tune`，更新 `DBI` 、 `Awoo Installer` 及 `emuiibo` 仓库地址

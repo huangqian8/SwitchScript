@@ -2,6 +2,11 @@
 set -euo pipefail
 set -E
 
+if [ -z "${BASH_VERSINFO[0]+set}" ] || [ "${BASH_VERSINFO[0]}" -lt 3 ]; then
+    echo "Bash 3.2 or newer is required. Current version: ${BASH_VERSION:-unknown}" >&2
+    exit 1
+fi
+
 if [ "${DEBUG:-0}" = "1" ]; then
     set -x
     PS4='[${LINENO}] '
@@ -21,6 +26,8 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SWITCHSD_DIR="${SCRIPT_DIR}/SwitchSD"
 readonly DESCRIPTION_FILE="${SCRIPT_DIR}/description.txt"
 readonly TEMPLATE_DIR="${SCRIPT_DIR}/templates"
+readonly DOWNLOAD_TMP_SUFFIX=".download-part"
+readonly HTTP_USER_AGENT="SwitchScript/1.0"
 
 # Colors for output
 readonly RED='\033[31m'
@@ -33,48 +40,118 @@ log_success() { echo -e "${1} ${GREEN}success${NC}."; }
 log_error() { echo -e "${1} ${RED}failed${NC}."; }
 log_info() { echo -e "${YELLOW}[INFO]${NC} ${1}"; }
 
-if [ -z "${BASH_VERSINFO[0]+set}" ] || [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
-    echo "Bash 4 or newer is required. Current version: ${BASH_VERSION:-unknown}" >&2
-    echo "On macOS, install a newer bash and run this script with it." >&2
-    exit 1
-fi
-
 # Description lines (name + version)
 declare -a DESCRIPTION_LINES=()
 declare -a FAILED_ITEMS=()
 declare -a REQUIRED_ITEMS=("Atmosphere" "Fusee" "Hekate + Nyx CHS")
-declare -A ITEM_STATUS=()
-declare -A FAILED_STATUS=()
-declare -A RELEASE_CACHE=()
+declare -a ITEM_STATUS=()
+declare -a FAILED_STATUS=()
+declare -a RELEASE_CACHE_REPOS=()
+declare -a RELEASE_CACHE_JSON=()
 declare -a DOWNLOAD_QUEUE_PIDS=()
-declare -A DOWNLOAD_PID_TO_KEY=()
-declare -A DOWNLOAD_KEY_STATUS=()
-declare -A DOWNLOAD_KEY_DESC=()
-declare -A ENABLED_GROUPS=()
+declare -a DOWNLOAD_PID_KEYS=()
+declare -a DOWNLOAD_KEY_STATUS_KEYS=()
+declare -a DOWNLOAD_KEY_STATUS_VALUES=()
+declare -a DOWNLOAD_KEY_DESC_KEYS=()
+declare -a DOWNLOAD_KEY_DESC_VALUES=()
+declare -a ENABLED_GROUPS=()
 
 MAX_PARALLEL_DOWNLOADS="${MAX_PARALLEL_DOWNLOADS:-5}"
 DRY_RUN=0
 ONLY_MODE=0
 
+array_name_contains() {
+    local needle="$1"
+    local array_name="$2"
+    local i item
+    eval "local count=\${#$array_name[@]}"
+
+    for ((i = 0; i < count; i++)); do
+        eval "item=\${$array_name[$i]}"
+        [ "$item" = "$needle" ] && return 0
+    done
+    return 1
+}
+
+kv_set() {
+    local key="$1"
+    local value="$2"
+    local keys_name="$3"
+    local values_name="$4"
+    local i key_at_i
+    eval "local count=\${#$keys_name[@]}"
+
+    for ((i = 0; i < count; i++)); do
+        eval "key_at_i=\${$keys_name[$i]}"
+        if [ "$key_at_i" = "$key" ]; then
+            eval "$values_name[$i]=\$value"
+            return 0
+        fi
+    done
+
+    eval "$keys_name+=(\"\$key\")"
+    eval "$values_name+=(\"\$value\")"
+}
+
+kv_get() {
+    local key="$1"
+    local keys_name="$2"
+    local values_name="$3"
+    local default="${4:-}"
+    local i key_at_i value_at_i
+    eval "local count=\${#$keys_name[@]}"
+
+    for ((i = 0; i < count; i++)); do
+        eval "key_at_i=\${$keys_name[$i]}"
+        if [ "$key_at_i" = "$key" ]; then
+            eval "value_at_i=\${$values_name[$i]}"
+            printf '%s' "$value_at_i"
+            return 0
+        fi
+    done
+
+    printf '%s' "$default"
+    return 1
+}
+
+kv_has() {
+    local key="$1"
+    local keys_name="$2"
+    local i key_at_i
+    eval "local count=\${#$keys_name[@]}"
+
+    for ((i = 0; i < count; i++)); do
+        eval "key_at_i=\${$keys_name[$i]}"
+        [ "$key_at_i" = "$key" ] && return 0
+    done
+    return 1
+}
+
 record_item() {
     local name="$1"
     local version="${2:-unknown}"
     DESCRIPTION_LINES+=("${name} (${version})")
-    ITEM_STATUS["$name"]=1
+    ITEM_STATUS+=("$name")
 }
 
 record_failure() {
     local name="$1"
-    if [ "${FAILED_STATUS["$name"]+set}" = "set" ]; then
+    if array_name_contains "$name" FAILED_STATUS; then
         return 0
     fi
-    FAILED_STATUS["$name"]=1
+    FAILED_STATUS+=("$name")
     FAILED_ITEMS+=("$name")
+}
+
+has_failures() {
+    [ "${#FAILED_ITEMS[@]}" -gt 0 ]
 }
 
 write_description_file() {
     : > "$DESCRIPTION_FILE"
-    printf "%s\n" "${DESCRIPTION_LINES[@]}" >> "$DESCRIPTION_FILE"
+    if [ "${#DESCRIPTION_LINES[@]}" -gt 0 ]; then
+        printf "%s\n" "${DESCRIPTION_LINES[@]}" >> "$DESCRIPTION_FILE"
+    fi
 }
 
 validate_required_items() {
@@ -82,7 +159,7 @@ validate_required_items() {
     local item
 
     for item in "${REQUIRED_ITEMS[@]}"; do
-        if [ "${ITEM_STATUS["$item"]+set}" != "set" ]; then
+        if ! array_name_contains "$item" ITEM_STATUS; then
             log_error "Missing required component: $item"
             record_failure "$item"
             missing=1
@@ -125,7 +202,7 @@ group_enabled() {
     if [ "$ONLY_MODE" -eq 0 ]; then
         return 0
     fi
-    [ "${ENABLED_GROUPS["$group"]+set}" = "set" ]
+    array_name_contains "$group" ENABLED_GROUPS
 }
 
 parse_args() {
@@ -149,7 +226,9 @@ parse_args() {
                 for group in "${_groups[@]}"; do
                     case "$group" in
                         core|payload|homebrew|special|system|configs|finalize)
-                            ENABLED_GROUPS["$group"]=1
+                            if ! array_name_contains "$group" ENABLED_GROUPS; then
+                                ENABLED_GROUPS+=("$group")
+                            fi
                             ;;
                         all)
                             ONLY_MODE=0
@@ -205,6 +284,13 @@ setup_workspace() {
     log_info "Setting up directories without removing existing SwitchSD contents..."
     create_switchsd_dirs
 }
+
+cleanup_stale_download_parts() {
+    if [ -d "$SWITCHSD_DIR" ]; then
+        find "$SWITCHSD_DIR" -type f -name "*${DOWNLOAD_TMP_SUFFIX}" -delete
+    fi
+}
+
 # Download function with retry logic
 download_file() {
     local url="$1"
@@ -212,12 +298,17 @@ download_file() {
     local description="$3"
     local max_retries=3
     local retry_count=0
+    local tmp_output="${output}${DOWNLOAD_TMP_SUFFIX}"
+
+    rm -f "$tmp_output"
     
     while [ $retry_count -lt $max_retries ]; do
-        if curl -fsSL --connect-timeout 30 --max-time 300 "$url" -o "$output"; then
+        if curl -fsSL -A "$HTTP_USER_AGENT" --connect-timeout 30 --max-time 300 "$url" -o "$tmp_output"; then
+            mv "$tmp_output" "$output"
             log_success "$description download"
             return 0
         else
+            rm -f "$tmp_output"
             retry_count=$((retry_count + 1))
             if [ $retry_count -lt $max_retries ]; then
                 log_info "Retrying $description download (attempt $((retry_count + 1))/$max_retries)..."
@@ -228,42 +319,52 @@ download_file() {
     
     log_error "$description download"
     record_failure "$description"
+    rm -f "$tmp_output"
     return 1
 }
 
 reset_download_queue() {
     DOWNLOAD_QUEUE_PIDS=()
-    DOWNLOAD_PID_TO_KEY=()
-    DOWNLOAD_KEY_STATUS=()
-    DOWNLOAD_KEY_DESC=()
+    DOWNLOAD_PID_KEYS=()
+    DOWNLOAD_KEY_STATUS_KEYS=()
+    DOWNLOAD_KEY_STATUS_VALUES=()
+    DOWNLOAD_KEY_DESC_KEYS=()
+    DOWNLOAD_KEY_DESC_VALUES=()
 }
 
 reap_download_queue() {
     local -a running=()
-    local pid key
+    local -a running_keys=()
+    local pid key i
 
-    for pid in "${DOWNLOAD_QUEUE_PIDS[@]}"; do
+    for ((i = 0; i < ${#DOWNLOAD_QUEUE_PIDS[@]}; i++)); do
+        pid="${DOWNLOAD_QUEUE_PIDS[$i]}"
+        key="${DOWNLOAD_PID_KEYS[$i]}"
         if kill -0 "$pid" 2>/dev/null; then
             running+=("$pid")
+            running_keys+=("$key")
             continue
         fi
 
-        key="${DOWNLOAD_PID_TO_KEY["$pid"]:-}"
         if [ -z "$key" ]; then
             continue
         fi
 
         if wait "$pid"; then
-            DOWNLOAD_KEY_STATUS["$key"]="ok"
+            kv_set "$key" "ok" DOWNLOAD_KEY_STATUS_KEYS DOWNLOAD_KEY_STATUS_VALUES
         else
-            DOWNLOAD_KEY_STATUS["$key"]="fail"
-            record_failure "${DOWNLOAD_KEY_DESC["$key"]:-$key}"
+            kv_set "$key" "fail" DOWNLOAD_KEY_STATUS_KEYS DOWNLOAD_KEY_STATUS_VALUES
+            record_failure "$(kv_get "$key" DOWNLOAD_KEY_DESC_KEYS DOWNLOAD_KEY_DESC_VALUES "$key")"
         fi
-
-        unset "DOWNLOAD_PID_TO_KEY[$pid]"
     done
 
-    DOWNLOAD_QUEUE_PIDS=("${running[@]}")
+    if [ "${#running[@]}" -gt 0 ]; then
+        DOWNLOAD_QUEUE_PIDS=("${running[@]}")
+        DOWNLOAD_PID_KEYS=("${running_keys[@]}")
+    else
+        DOWNLOAD_QUEUE_PIDS=()
+        DOWNLOAD_PID_KEYS=()
+    fi
 }
 
 wait_for_download_slot() {
@@ -281,8 +382,8 @@ queue_download_job() {
     local pid
 
     wait_for_download_slot
-    DOWNLOAD_KEY_STATUS["$key"]="pending"
-    DOWNLOAD_KEY_DESC["$key"]="$description"
+    kv_set "$key" "pending" DOWNLOAD_KEY_STATUS_KEYS DOWNLOAD_KEY_STATUS_VALUES
+    kv_set "$key" "$description" DOWNLOAD_KEY_DESC_KEYS DOWNLOAD_KEY_DESC_VALUES
 
     (
         download_file "$url" "$output" "$description"
@@ -290,7 +391,7 @@ queue_download_job() {
     pid=$!
 
     DOWNLOAD_QUEUE_PIDS+=("$pid")
-    DOWNLOAD_PID_TO_KEY["$pid"]="$key"
+    DOWNLOAD_PID_KEYS+=("$key")
 }
 
 wait_for_all_downloads() {
@@ -302,7 +403,7 @@ wait_for_all_downloads() {
 
 download_job_succeeded() {
     local key="$1"
-    [ "${DOWNLOAD_KEY_STATUS["$key"]:-}" = "ok" ]
+    [ "$(kv_get "$key" DOWNLOAD_KEY_STATUS_KEYS DOWNLOAD_KEY_STATUS_VALUES "")" = "ok" ]
 }
 
 # Extract function
@@ -399,13 +500,13 @@ get_release_json() {
     local api="https://api.github.com/repos/$repo/releases/latest"
     local release_json
 
-    if [ "${RELEASE_CACHE["$repo"]+set}" = "set" ]; then
-        printf '%s' "${RELEASE_CACHE["$repo"]}"
+    if kv_has "$repo" RELEASE_CACHE_REPOS; then
+        kv_get "$repo" RELEASE_CACHE_REPOS RELEASE_CACHE_JSON
         return 0
     fi
 
     release_json=$(github_api_get "$api") || return 1
-    RELEASE_CACHE["$repo"]="$release_json"
+    kv_set "$repo" "$release_json" RELEASE_CACHE_REPOS RELEASE_CACHE_JSON
     printf '%s' "$release_json"
 }
 
@@ -430,18 +531,21 @@ get_latest_release_asset() {
 
 github_api_get() {
     local url="$1"
-    local -a args=( -fsSL -H "Accept: application/vnd.github+json" )
+    local -a args=( -fsSL -A "$HTTP_USER_AGENT" -H "Accept: application/vnd.github+json" )
     if [ -n "${GITHUB_TOKEN:-}" ]; then
         args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
     fi
-    curl "${args[@]}" "$url"
+    if ! curl "${args[@]}" "$url"; then
+        echo "[WARN] GitHub API request failed: $url" >&2
+        echo "[WARN] If this happens often, set GITHUB_TOKEN to avoid unauthenticated API limits." >&2
+        return 1
+    fi
 }
 
 # Main download and setup function
 main() {
     parse_args "$@"
     validate_runtime_options
-    check_dependencies
 
     if [ "$DRY_RUN" -eq 1 ]; then
         log_info "Dry-run mode enabled. No download or filesystem changes will be made."
@@ -460,7 +564,10 @@ main() {
         return 0
     fi
 
+    check_dependencies
+
     setup_workspace
+    cleanup_stale_download_parts
     cd "$SWITCHSD_DIR"
     
     log_info "Starting downloads..."
@@ -516,22 +623,19 @@ main() {
     if group_enabled payload; then
         log_info "Downloading payloads..."
         
-        declare -A payloads=(
-            ["zdm65477730/Lockpick_RCMDecScots"]="Lockpick_RCM\.bin:Lockpick_RCM"
-            ["zdm65477730/TegraExplorer"]="TegraExplorer\.bin:TegraExplorer"
-            ["zdm65477730/CommonProblemResolver"]="CommonProblemResolver\.bin:CommonProblemResolver"
+        local -a payloads=(
+            "zdm65477730/CommonProblemResolver|CommonProblemResolver\\.bin|CommonProblemResolver"
+            "zdm65477730/Lockpick_RCMDecScots|Lockpick_RCM\\.bin|Lockpick_RCM"
+            "zdm65477730/TegraExplorer|TegraExplorer\\.bin|TegraExplorer"
         )
-        declare -A payload_key_name=()
-        declare -A payload_key_tag=()
+        local -a payload_key_names=()
+        local -a payload_key_tags=()
         local -a payload_keys=()
-        
-        local -a payload_repos=()
-        mapfile -t payload_repos < <(printf '%s\n' "${!payloads[@]}" | sort)
 
         reset_download_queue
         local payload_idx=0
-        for repo_pattern in "${payload_repos[@]}"; do
-            IFS=':' read -r pattern name <<< "${payloads[$repo_pattern]}"
+        for payload_info in "${payloads[@]}"; do
+            IFS='|' read -r repo_pattern pattern name <<< "$payload_info"
             local url tag key
             IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
             if [ -z "$url" ]; then
@@ -542,17 +646,18 @@ main() {
             key="payload_${payload_idx}"
             payload_idx=$((payload_idx + 1))
             payload_keys+=("$key")
-            payload_key_name["$key"]="$name"
-            payload_key_tag["$key"]="$tag"
+            payload_key_names+=("$name")
+            payload_key_tags+=("$tag")
             queue_download_job "$key" "$url" "${name}.bin" "$name"
         done
         wait_for_all_downloads
 
-        local key
-        for key in "${payload_keys[@]}"; do
+        local key i
+        for ((i = 0; i < ${#payload_keys[@]}; i++)); do
+            key="${payload_keys[$i]}"
             local name tag
-            name="${payload_key_name["$key"]}"
-            tag="${payload_key_tag["$key"]}"
+            name="${payload_key_names[$i]}"
+            tag="${payload_key_tags[$i]}"
             if download_job_succeeded "$key"; then
                 mv "${name}.bin" ./bootloader/payloads/
                 record_item "$name" "$tag"
@@ -564,35 +669,32 @@ main() {
     if group_enabled homebrew; then
         log_info "Downloading homebrew applications..."
         
-        declare -A homebrew_apps=(
-            ["meganukebmp/Switch_90DNS_tester"]="Switch_90DNS_tester\.nro:switch/Switch_90DNS_tester/Switch_90DNS_tester.nro:Switch_90DNS_tester"
-            ["gzk47/DBIPatcher"]="DBI.*\.zhcn\.nro:switch/DBI/DBI.nro:DBI"
-            ["WerWolv/Hekate-Toolbox"]="HekateToolbox\.nro:switch/HekateToolbox/HekateToolbox.nro:HekateToolbox"
-            ["zdm65477730/NX-Activity-Log"]="NX-Activity-Log\.nro:switch/NX-Activity-Log/NX-Activity-Log.nro:NX-Activity-Log"
-            ["exelix11/SwitchThemeInjector"]="NXThemesInstaller\.nro:switch/NXThemesInstaller/NXThemesInstaller.nro:NXThemesInstaller"
-            ["J-D-K/JKSV"]="JKSV\.nro:switch/JKSV/JKSV.nro:JKSV"
-            ["CaiMiao/Tencent-switcher-GUI"]="tencent-switcher-gui\.nro:switch/tencent-switcher-gui/tencent-switcher-gui.nro:Tencent-switcher-GUI"
-            ["PoloNX/SimpleModDownloader"]="SimpleModDownloader\.nro:switch/SimpleModDownloader/SimpleModDownloader.nro:SimpleModDownloader"
-            ["dragonflylee/switchfin"]="Switchfin\.nro:switch/Switchfin/Switchfin.nro:Switchfin"
-            ["XITRIX/Moonlight-Switch"]="Moonlight-Switch\.nro:switch/Moonlight/Moonlight-Switch.nro:Moonlight"
-            ["zdm65477730/NX-Shell"]="NX-Shell\.nro:switch/NX-Shell/NX-Shell.nro:NX-Shell"
-            ["fortheusers/hb-appstore"]="appstore\.nro:switch/HB-App-Store/appstore.nro:hb-appstore"
+        local -a homebrew_apps=(
+            "CaiMiao/Tencent-switcher-GUI|tencent-switcher-gui\\.nro|switch/tencent-switcher-gui/tencent-switcher-gui.nro|Tencent-switcher-GUI"
+            "J-D-K/JKSV|JKSV\\.nro|switch/JKSV/JKSV.nro|JKSV"
+            "PoloNX/SimpleModDownloader|SimpleModDownloader\\.nro|switch/SimpleModDownloader/SimpleModDownloader.nro|SimpleModDownloader"
+            "WerWolv/Hekate-Toolbox|HekateToolbox\\.nro|switch/HekateToolbox/HekateToolbox.nro|HekateToolbox"
+            "XITRIX/Moonlight-Switch|Moonlight-Switch\\.nro|switch/Moonlight/Moonlight-Switch.nro|Moonlight"
+            "dragonflylee/switchfin|Switchfin\\.nro|switch/Switchfin/Switchfin.nro|Switchfin"
+            "exelix11/SwitchThemeInjector|NXThemesInstaller\\.nro|switch/NXThemesInstaller/NXThemesInstaller.nro|NXThemesInstaller"
+            "fortheusers/hb-appstore|appstore\\.nro|switch/HB-App-Store/appstore.nro|hb-appstore"
+            "gzk47/DBIPatcher|DBI.*\\.zhcn\\.nro|switch/DBI/DBI.nro|DBI"
+            "meganukebmp/Switch_90DNS_tester|Switch_90DNS_tester\\.nro|switch/Switch_90DNS_tester/Switch_90DNS_tester.nro|Switch_90DNS_tester"
+            "zdm65477730/NX-Activity-Log|NX-Activity-Log\\.nro|switch/NX-Activity-Log/NX-Activity-Log.nro|NX-Activity-Log"
+            "zdm65477730/NX-Shell|NX-Shell\\.nro|switch/NX-Shell/NX-Shell.nro|NX-Shell"
         )
-        declare -A homebrew_key_name=()
-        declare -A homebrew_key_tag=()
-        declare -A homebrew_key_target=()
-        declare -A homebrew_key_file=()
+        local -a homebrew_key_names=()
+        local -a homebrew_key_tags=()
+        local -a homebrew_key_targets=()
+        local -a homebrew_key_files=()
         local -a homebrew_keys=()
-        
-        local -a homebrew_repos=()
-        mapfile -t homebrew_repos < <(printf '%s\n' "${!homebrew_apps[@]}" | sort)
 
         reset_download_queue
         local homebrew_idx=0
-        for repo_info in "${homebrew_repos[@]}"; do
-            IFS=':' read -r pattern target_path name <<< "${homebrew_apps[$repo_info]}"
+        for repo_info in "${homebrew_apps[@]}"; do
+            IFS='|' read -r repo pattern target_path name <<< "$repo_info"
             local url tag key temp_file
-            IFS='|' read -r url tag < <(get_latest_release_asset "$repo_info" "$pattern") || true
+            IFS='|' read -r url tag < <(get_latest_release_asset "$repo" "$pattern") || true
             if [ -z "$url" ]; then
                 record_failure "$name"
                 continue
@@ -603,21 +705,22 @@ main() {
             temp_file=".download_${key}_$(basename "$target_path")"
 
             homebrew_keys+=("$key")
-            homebrew_key_name["$key"]="$name"
-            homebrew_key_tag["$key"]="$tag"
-            homebrew_key_target["$key"]="$target_path"
-            homebrew_key_file["$key"]="$temp_file"
+            homebrew_key_names+=("$name")
+            homebrew_key_tags+=("$tag")
+            homebrew_key_targets+=("$target_path")
+            homebrew_key_files+=("$temp_file")
             queue_download_job "$key" "$url" "$temp_file" "$name"
         done
         wait_for_all_downloads
 
-        local key
-        for key in "${homebrew_keys[@]}"; do
+        local key i
+        for ((i = 0; i < ${#homebrew_keys[@]}; i++)); do
+            key="${homebrew_keys[$i]}"
             local name tag target_path temp_file
-            name="${homebrew_key_name["$key"]}"
-            tag="${homebrew_key_tag["$key"]}"
-            target_path="${homebrew_key_target["$key"]}"
-            temp_file="${homebrew_key_file["$key"]}"
+            name="${homebrew_key_names[$i]}"
+            tag="${homebrew_key_tags[$i]}"
+            target_path="${homebrew_key_targets[$i]}"
+            temp_file="${homebrew_key_files[$i]}"
             if download_job_succeeded "$key"; then
                 mkdir -p "$(dirname "$target_path")"
                 mv "$temp_file" "$target_path"
@@ -670,6 +773,7 @@ main() {
         fi
         
         # Theme patches
+        rm -rf theme-patches
         if git clone --depth 1 https://github.com/exelix11/theme-patches 2>/dev/null; then
             log_success "theme-patches download"
             local theme_patch_version
@@ -688,31 +792,28 @@ main() {
     if group_enabled system; then
         log_info "Downloading system modules and overlays..."
         
-        declare -A system_modules=(
-            ["zdm65477730/nx-ovlloader"]="nx-ovlloader\.zip:nx-ovlloader"
-            ["zdm65477730/Ultrahand-Overlay"]="Ultrahand\.zip:Ultrahand-Overlay"
-            ["zdm65477730/EdiZon-Overlay"]="EdiZon\.zip:EdiZon"
-            ["zdm65477730/ovl-sysmodules"]="ovl-sysmodules\.zip:ovl-sysmodules"
-            ["zdm65477730/Status-Monitor-Overlay"]="StatusMonitor\.zip:StatusMonitor"
-            ["zdm65477730/ReverseNX-RT"]="ReverseNX-RT\.zip:ReverseNX-RT"
-            ["zdm65477730/ldn_mitm"]="ldn_mitm\.zip:ldn_mitm"
-            ["zdm65477730/QuickNTP"]="QuickNTP\.zip:QuickNTP"
-            ["zdm65477730/Fizeau"]="Fizeau\.zip:Fizeau"
-            ["zdm65477730/sys-patch"]="sys-patch\.zip:sys-patch"
-            ["zdm65477730/sys-clk"]="sys-clk.*\.zip:sys-clk"
-            ["ndeadly/MissionControl"]="MissionControl.*\.zip:MissionControl"
+        local -a system_modules=(
+            "ndeadly/MissionControl|MissionControl.*\\.zip|MissionControl"
+            "zdm65477730/EdiZon-Overlay|EdiZon\\.zip|EdiZon"
+            "zdm65477730/Fizeau|Fizeau\\.zip|Fizeau"
+            "zdm65477730/QuickNTP|QuickNTP\\.zip|QuickNTP"
+            "zdm65477730/ReverseNX-RT|ReverseNX-RT\\.zip|ReverseNX-RT"
+            "zdm65477730/Status-Monitor-Overlay|StatusMonitor\\.zip|StatusMonitor"
+            "zdm65477730/Ultrahand-Overlay|Ultrahand\\.zip|Ultrahand-Overlay"
+            "zdm65477730/ldn_mitm|ldn_mitm\\.zip|ldn_mitm"
+            "zdm65477730/nx-ovlloader|nx-ovlloader\\.zip|nx-ovlloader"
+            "zdm65477730/ovl-sysmodules|ovl-sysmodules\\.zip|ovl-sysmodules"
+            "zdm65477730/sys-clk|sys-clk.*\\.zip|sys-clk"
+            "zdm65477730/sys-patch|sys-patch\\.zip|sys-patch"
         )
-        declare -A system_key_name=()
-        declare -A system_key_tag=()
+        local -a system_key_names=()
+        local -a system_key_tags=()
         local -a system_keys=()
-        
-        local -a system_repos=()
-        mapfile -t system_repos < <(printf '%s\n' "${!system_modules[@]}" | sort)
 
         reset_download_queue
         local system_idx=0
-        for repo_pattern in "${system_repos[@]}"; do
-            IFS=':' read -r pattern name <<< "${system_modules[$repo_pattern]}"
+        for repo_info in "${system_modules[@]}"; do
+            IFS='|' read -r repo_pattern pattern name <<< "$repo_info"
             local url tag key
             IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
             if [ -z "$url" ]; then
@@ -723,17 +824,18 @@ main() {
             key="system_${system_idx}"
             system_idx=$((system_idx + 1))
             system_keys+=("$key")
-            system_key_name["$key"]="$name"
-            system_key_tag["$key"]="$tag"
+            system_key_names+=("$name")
+            system_key_tags+=("$tag")
             queue_download_job "$key" "$url" "${name}.zip" "$name"
         done
         wait_for_all_downloads
 
-        local key
-        for key in "${system_keys[@]}"; do
+        local key i
+        for ((i = 0; i < ${#system_keys[@]}; i++)); do
+            key="${system_keys[$i]}"
             local name tag
-            name="${system_key_name["$key"]}"
-            tag="${system_key_tag["$key"]}"
+            name="${system_key_names[$i]}"
+            tag="${system_key_tags[$i]}"
             if download_job_succeeded "$key"; then
                 extract_and_cleanup "${name}.zip" "$name"
                 record_item "$name" "$tag"
@@ -798,9 +900,14 @@ main() {
     if group_enabled core && group_enabled configs && group_enabled finalize; then
         validate_final_structure
     fi
-    
-    log_info "Setup completed successfully!"
-    echo -e "\n${GREEN}Your Switch SD card is prepared!${NC}"
+
+    if has_failures; then
+        log_info "Setup completed with warnings. Review failed items above."
+        echo -e "\n${YELLOW}Your Switch SD card is prepared, but some optional items failed.${NC}"
+    else
+        log_info "Setup completed successfully!"
+        echo -e "\n${GREEN}Your Switch SD card is prepared!${NC}"
+    fi
 }
 
 # Configuration generation functions
