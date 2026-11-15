@@ -81,8 +81,10 @@
     - `--dry-run`：只显示将执行的分组，不下载或写入文件
     - `--only <groups>`：只运行指定分组，例如 `--only core,configs,finalize`
   - 注意：全量运行会清空并重建 `SwitchSD`；使用 `--only` 时会保留已有 `SwitchSD` 内容，仅补齐目录并执行指定分组。
+  - 已有 SD 卡如遇到 `nosigchk` 启动报错，可删除 `bootloader/hekate_ipl.ini` 中两处 `kip1patch=nosigchk`；或运行 `bash switchScript.sh --only configs` 后，将生成的 `SwitchSD/bootloader/hekate_ipl.ini` 复制到 SD 卡对应位置（覆盖前请备份自定义启动配置）。
 
 ## 更新日志
+- 2026-11-15 移除两个自制系统启动项中的 `kip1patch=nosigchk`，避免启动时请求该外部补丁导致报错（#34）
 - 2026-06-20 模板化配置文件，优化 `--only` 模式，兼容 `Bash 3.2+` 并增加最终结构校验
 - 2026-04-18 添加 `Sphaira` 启动器
 - 2026-03-01 精简优化 `switchScript.sh`
