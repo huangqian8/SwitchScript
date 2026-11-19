@@ -78,12 +78,23 @@
   - 说明：脚本兼容 macOS 默认 `/bin/bash` 3.2，也兼容常见 Linux / WSL 环境。
   - 可选：如果频繁遇到 GitHub API 限流或部分插件下载失败，可设置 `GITHUB_TOKEN` 后再运行脚本。
   - 可选参数：
+    - `--strict`：任一所选组件准备失败时返回非零状态；自动发布默认启用，防止发布缺少组件的整合包。
     - `--dry-run`：只显示将执行的分组，不下载或写入文件
     - `--only <groups>`：只运行指定分组，例如 `--only core,configs,finalize`
   - 注意：全量运行会清空并重建 `SwitchSD`；使用 `--only` 时会保留已有 `SwitchSD` 内容，仅补齐目录并执行指定分组。
   - 已有 SD 卡如遇到 `nosigchk` 启动报错，可删除 `bootloader/hekate_ipl.ini` 中两处 `kip1patch=nosigchk`；或运行 `bash switchScript.sh --only configs` 后，将生成的 `SwitchSD/bootloader/hekate_ipl.ini` 复制到 SD 卡对应位置（覆盖前请备份自定义启动配置）。
 
+## 自动构建与验证
+
+- 每天北京时间 16:17 请求自动构建，GitHub 调度可能延迟；也可在 Actions 页面使用 `Run workflow` 手动运行。
+- 脚本、配置模板和构建 workflow 的修改会触发构建；README 单独修改不触发发布。
+- 自动发布使用 `--strict`，所选组件失败时停止发布。普通本地运行保留警告模式，失败组件会写入 `description.txt`。
+- 发布流程串行执行，构建源码固定为触发运行的提交，发布说明记录该提交 SHA。同日仍沿用日期标签并更新已有 Release。
+- `--only` 局部更新会保留 `description.txt` 中其他组件上次成功记录的版本；失败组件单独列出，版本清单不替代文件完整性检查。
+- 离线回归检查：`python3 -m unittest discover -s tests -v`；脚本语法检查：`bash -n switchScript.sh`。
+
 ## 更新日志
+- 2026-11-19 完善构建触发、严格发布和失败报告；修复 API 缓存，增加请求超时重试、手动构建、发布并发控制与离线回归检查
 - 2026-11-15 移除两个自制系统启动项中的 `kip1patch=nosigchk`，避免启动时请求该外部补丁导致报错（#34）
 - 2026-06-20 模板化配置文件，优化 `--only` 模式，兼容 `Bash 3.2+` 并增加最终结构校验
 - 2026-04-18 添加 `Sphaira` 启动器

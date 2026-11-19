@@ -46,8 +46,7 @@ declare -a FAILED_ITEMS=()
 declare -a REQUIRED_ITEMS=("Atmosphere" "Fusee" "Hekate + Nyx CHS")
 declare -a ITEM_STATUS=()
 declare -a FAILED_STATUS=()
-declare -a RELEASE_CACHE_REPOS=()
-declare -a RELEASE_CACHE_JSON=()
+RELEASE_CACHE_DIR=""
 declare -a DOWNLOAD_QUEUE_PIDS=()
 declare -a DOWNLOAD_PID_KEYS=()
 declare -a DOWNLOAD_KEY_STATUS_KEYS=()
@@ -59,6 +58,7 @@ declare -a ENABLED_GROUPS=()
 MAX_PARALLEL_DOWNLOADS="${MAX_PARALLEL_DOWNLOADS:-5}"
 DRY_RUN=0
 ONLY_MODE=0
+STRICT=0
 
 array_name_contains() {
     local needle="$1"
@@ -148,9 +148,37 @@ has_failures() {
 }
 
 write_description_file() {
+    local previous_line previous_name current_line replaced
+    local -a merged_lines=()
+    if [ "$ONLY_MODE" -eq 1 ] && [ -f "$DESCRIPTION_FILE" ]; then
+        while IFS= read -r previous_line; do
+            case "$previous_line" in
+                *" ("*")")
+                    previous_name="${previous_line%% (*}"
+                    replaced=0
+                    for current_line in "${DESCRIPTION_LINES[@]}"; do
+                        if [ "${current_line%% (*}" = "$previous_name" ]; then
+                            replaced=1
+                            break
+                        fi
+                    done
+                    if [ "$replaced" -eq 0 ]; then
+                        merged_lines+=("$previous_line")
+                    fi
+                    ;;
+            esac
+        done < "$DESCRIPTION_FILE"
+    fi
+    if [ "${#merged_lines[@]}" -gt 0 ]; then
+        DESCRIPTION_LINES+=("${merged_lines[@]}")
+    fi
     : > "$DESCRIPTION_FILE"
     if [ "${#DESCRIPTION_LINES[@]}" -gt 0 ]; then
         printf "%s\n" "${DESCRIPTION_LINES[@]}" >> "$DESCRIPTION_FILE"
+    fi
+    if has_failures; then
+        printf '\nWARNING: Failed components\n' >> "$DESCRIPTION_FILE"
+        printf -- '- %s\n' "${FAILED_ITEMS[@]}" >> "$DESCRIPTION_FILE"
     fi
 }
 
@@ -190,6 +218,7 @@ print_usage() {
 Usage: switchScript.sh [options]
 
 Options:
+  --strict                 Fail if any selected component cannot be prepared
   --dry-run                Print selected plan and exit (no download/write)
   --only <groups>          Run only selected groups (comma-separated)
                            Groups: core,payload,homebrew,special,system,configs,finalize
@@ -210,6 +239,9 @@ parse_args() {
     local -a _groups=()
     while [ "$#" -gt 0 ]; do
         case "$1" in
+            --strict)
+                STRICT=1
+                ;;
             --dry-run)
                 DRY_RUN=1
                 ;;
@@ -414,20 +446,32 @@ extract_and_cleanup() {
     
     if [ -f "$archive" ]; then
         case "$archive" in
-            *.zip) unzip -oq "$archive" -d "$extract_dir" ;;
+            *.zip)
+                if ! unzip -oq "$archive" -d "$extract_dir"; then
+                    log_error "$description extraction"
+                    record_failure "$description"
+                    return 1
+                fi
+                ;;
             *.7z)
                 if ! command -v 7z >/dev/null 2>&1; then
                     log_error "$description extraction (missing dependency: 7z)"
+                    record_failure "$description"
                     return 1
                 fi
-                7z x "$archive" -o"$extract_dir" -y >/dev/null
+                if ! 7z x "$archive" -o"$extract_dir" -y >/dev/null; then
+                    log_error "$description extraction"
+                    record_failure "$description"
+                    return 1
+                fi
                 ;;
-            *) log_error "Unknown archive format: $archive"; return 1 ;;
+            *) log_error "Unknown archive format: $archive"; record_failure "$description"; return 1 ;;
         esac
         rm -f "$archive"
         log_success "$description extraction"
     else
         log_error "$description extraction (file not found)"
+        record_failure "$description"
         return 1
     fi
 }
@@ -494,19 +538,30 @@ validate_final_structure() {
     log_success "Final structure validation"
 }
 
-# Get release JSON with per-repo cache
+# Files persist across command/process substitutions; cache lasts one run only.
+cleanup_release_cache() {
+    if [ -n "$RELEASE_CACHE_DIR" ]; then
+        rm -rf "$RELEASE_CACHE_DIR"
+    fi
+}
+
 get_release_json() {
     local repo="$1"
     local api="https://api.github.com/repos/$repo/releases/latest"
+    local cache_file="$RELEASE_CACHE_DIR/${repo//\//_}.json"
     local release_json
 
-    if kv_has "$repo" RELEASE_CACHE_REPOS; then
-        kv_get "$repo" RELEASE_CACHE_REPOS RELEASE_CACHE_JSON
+    if [ -f "$cache_file" ]; then
+        cat "$cache_file"
         return 0
     fi
 
     release_json=$(github_api_get "$api") || return 1
-    kv_set "$repo" "$release_json" RELEASE_CACHE_REPOS RELEASE_CACHE_JSON
+    if ! jq -e 'type == "object" and (.tag_name | type == "string") and (.assets | type == "array")' >/dev/null <<< "$release_json"; then
+        echo "[WARN] Invalid release response: $repo" >&2
+        return 1
+    fi
+    printf '%s' "$release_json" > "$cache_file"
     printf '%s' "$release_json"
 }
 
@@ -518,7 +573,7 @@ get_latest_release_asset() {
 
     release_json=$(get_release_json "$repo") || return 1
     tag=$(jq -r '.tag_name // "unknown"' <<< "$release_json")
-    url=$(jq -r --arg re "$pattern" '.assets[]?.browser_download_url | select(test($re))' <<< "$release_json" | head -n1)
+    url=$(jq -r --arg re "$pattern" 'first(.assets[]?.browser_download_url | select(test($re))) // empty' <<< "$release_json")
 
     if [ -n "$url" ] && [ "$url" != "null" ]; then
         echo "${url}|${tag}"
@@ -531,7 +586,7 @@ get_latest_release_asset() {
 
 github_api_get() {
     local url="$1"
-    local -a args=( -fsSL -A "$HTTP_USER_AGENT" -H "Accept: application/vnd.github+json" )
+    local -a args=( -fsSL --connect-timeout 30 --max-time 120 --retry 2 --retry-delay 2 -A "$HTTP_USER_AGENT" -H "Accept: application/vnd.github+json" )
     if [ -n "${GITHUB_TOKEN:-}" ]; then
         args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
     fi
@@ -565,6 +620,8 @@ main() {
     fi
 
     check_dependencies
+    RELEASE_CACHE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/switchscript-releases.XXXXXX")
+    trap cleanup_release_cache EXIT
 
     setup_workspace
     cleanup_stale_download_parts
@@ -739,6 +796,8 @@ main() {
         if [ -n "$awoo_url" ] && download_file "$awoo_url" "Awoo-Installer.zip" "Awoo Installer"; then
             extract_and_cleanup "Awoo-Installer.zip" "Awoo Installer"
             record_item "Awoo Installer" "$awoo_tag"
+        else
+            record_failure "Awoo Installer"
         fi
 
         # Sphaira - homebrew menu
@@ -747,6 +806,8 @@ main() {
         if [ -n "$sphaira_url" ] && download_file "$sphaira_url" "sphaira.zip" "Sphaira"; then
             extract_and_cleanup "sphaira.zip" "Sphaira"
             record_item "Sphaira" "$sphaira_tag"
+        else
+            record_failure "Sphaira"
         fi
 
         # AIO Switch Updater
@@ -755,6 +816,8 @@ main() {
         if [ -n "$aio_url" ] && download_file "$aio_url" "aio-switch-updater.zip" "aio-switch-updater"; then
             extract_and_cleanup "aio-switch-updater.zip" "aio-switch-updater"
             record_item "aio-switch-updater" "$aio_tag"
+        else
+            record_failure "aio-switch-updater"
         fi
 
         # Wiliwili
@@ -762,8 +825,17 @@ main() {
         IFS='|' read -r wiliwili_url wiliwili_tag < <(get_latest_release_asset "xfangfang/wiliwili" "wiliwili-NintendoSwitch\\.zip") || true
         if [ -n "$wiliwili_url" ] && download_file "$wiliwili_url" "wiliwili-NintendoSwitch.zip" "wiliwili"; then
             extract_and_cleanup "wiliwili-NintendoSwitch.zip" "wiliwili"
-            [ -d wiliwili ] && mv wiliwili/wiliwili.nro ./switch/wiliwili/ && rm -rf wiliwili
-            record_item "wiliwili" "$wiliwili_tag"
+            if [ -f wiliwili/wiliwili.nro ]; then
+                mv wiliwili/wiliwili.nro ./switch/wiliwili/
+                rm -rf wiliwili
+            fi
+            if [ -s switch/wiliwili/wiliwili.nro ]; then
+                record_item "wiliwili" "$wiliwili_tag"
+            else
+                record_failure "wiliwili"
+            fi
+        else
+            record_failure "wiliwili"
         fi
 
         # Daybreak
@@ -779,9 +851,13 @@ main() {
             local theme_patch_version
             theme_patch_version=$(git -C theme-patches rev-parse --short HEAD 2>/dev/null || echo "unknown")
             mkdir -p themes
-            [ -d theme-patches/systemPatches ] && mv theme-patches/systemPatches ./themes/
+            if [ -d theme-patches/systemPatches ]; then
+                mv theme-patches/systemPatches ./themes/
+                record_item "theme-patches" "$theme_patch_version"
+            else
+                record_failure "theme-patches"
+            fi
             rm -rf theme-patches
-            record_item "theme-patches" "$theme_patch_version"
         else
             log_error "theme-patches download"
             record_failure "theme-patches"
@@ -847,8 +923,17 @@ main() {
         IFS='|' read -r emuiibo_url emuiibo_tag < <(get_latest_release_asset "XorTroll/emuiibo" "emuiibo\\.zip") || true
         if [ -n "$emuiibo_url" ] && download_file "$emuiibo_url" "emuiibo.zip" "emuiibo"; then
             extract_and_cleanup "emuiibo.zip" "emuiibo"
-            [ -d SdOut ] && cp -rf SdOut/* ./ && rm -rf SdOut
-            record_item "emuiibo" "$emuiibo_tag"
+            if [ -d SdOut ]; then
+                cp -R SdOut/. ./
+                rm -rf SdOut
+            fi
+            if [ -s atmosphere/contents/0100000000000352/exefs.nsp ]; then
+                record_item "emuiibo" "$emuiibo_tag"
+            else
+                record_failure "emuiibo"
+            fi
+        else
+            record_failure "emuiibo"
         fi
     fi
     
@@ -880,13 +965,6 @@ main() {
     if group_enabled core; then
         validate_required_items
     fi
-    print_failure_summary
-
-    # Write runtime description (with versions)
-    if group_enabled core || group_enabled payload || group_enabled homebrew || group_enabled special || group_enabled system; then
-        write_description_file
-    fi
-
     # Generate configuration files
     if group_enabled configs; then
         generate_configs
@@ -901,7 +979,16 @@ main() {
         validate_final_structure
     fi
 
+    print_failure_summary
+    if group_enabled core || group_enabled payload || group_enabled homebrew || group_enabled special || group_enabled system; then
+        write_description_file
+    fi
+
     if has_failures; then
+        if [ "$STRICT" -eq 1 ]; then
+            echo "Strict mode: selected components failed. Aborting publication." >&2
+            return 1
+        fi
         log_info "Setup completed with warnings. Review failed items above."
         echo -e "\n${YELLOW}Your Switch SD card is prepared, but some optional items failed.${NC}"
     else
