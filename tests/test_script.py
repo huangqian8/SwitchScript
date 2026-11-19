@@ -1,4 +1,5 @@
 """Offline regression checks. Run: python3 -m unittest discover -s tests -v."""
+import os
 import pathlib
 import shutil
 import subprocess
@@ -10,14 +11,19 @@ SOURCE = (ROOT / 'switchScript.sh').read_text().rsplit('main "$@"', 1)[0]
 
 
 class ScriptTests(unittest.TestCase):
-    def run_shell(self, body):
+    def run_shell(self, body, *, read_description=False):
         with tempfile.TemporaryDirectory(prefix='switchscript-test-') as tmp:
             directory = pathlib.Path(tmp)
             shutil.copytree(ROOT / 'templates', directory / 'templates')
             script = directory / 'test.sh'
             script.write_text(SOURCE + '\n' + body)
-            return subprocess.run(['/bin/bash', str(script)], text=True,
-                                  capture_output=True, cwd=tmp)
+            result = subprocess.run([os.environ.get('TEST_BASH', '/bin/bash'), str(script)],
+                                    text=True, capture_output=True, cwd=tmp)
+            if read_description:
+                report = directory / 'description.txt'
+                self.assertTrue(report.is_file(), result.stderr)
+                result.stdout += '\n' + report.read_text()
+            return result
 
     def test_cache_survives_subshells_and_preserves_release_snapshot(self):
         result = self.run_shell(r'''
@@ -53,19 +59,12 @@ get_latest_release_asset() { return 1; }
 get_release_json() { return 1; }
 download_file() { record_failure "$3"; return 1; }
 git() { return 1; }
-# Run main in a child shell so its failure does not prevent inspecting the report.
-set +e
-(main --only special STRICT_OPTION)
-result=$?
-set -e
-cat "$DESCRIPTION_FILE"
-printf '\nRESULT=%s\n' "$result"
-'''.replace('STRICT_OPTION', '--strict' if strict else ''))
+main --only special STRICT_OPTION
+'''.replace('STRICT_OPTION', '--strict' if strict else ''), read_description=True)
 
     def test_strict_mode_blocks_incomplete_build(self):
         result = self.failure_case(True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('RESULT=1', result.stdout)
+        self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn('Strict mode:', result.stderr)
         for component in ('Awoo Installer', 'Sphaira', 'aio-switch-updater',
                           'wiliwili', 'daybreak', 'theme-patches', 'OC_Toolkit_SC_EOS'):
@@ -74,7 +73,6 @@ printf '\nRESULT=%s\n' "$result"
     def test_default_mode_keeps_warning_in_description(self):
         result = self.failure_case(False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('RESULT=0', result.stdout)
         self.assertIn('WARNING: Failed components', result.stdout)
 
     def test_config_only_does_not_download(self):
@@ -112,15 +110,9 @@ cat "$DESCRIPTION_FILE"
     def test_system_asset_lookup_failures_include_emuiibo(self):
         result = self.run_shell(r'''check_dependencies() { :; }
 get_latest_release_asset() { return 1; }
-set +e
-(main --only system --strict)
-result=$?
-set -e
-cat "$DESCRIPTION_FILE"
-printf '\nRESULT=%s\n' "$result"
-''')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('RESULT=1', result.stdout)
+main --only system --strict
+''', read_description=True)
+        self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn('- emuiibo', result.stdout)
         self.assertIn('- sys-patch', result.stdout)
 
