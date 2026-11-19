@@ -3,3 +3,5 @@
 /SwitchSD.zip
 __pycache__/
 *.pyc
+/SwitchSD.zip.sha256
+/release-notes.txt

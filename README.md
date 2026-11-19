@@ -91,9 +91,12 @@
 - 自动发布使用 `--strict`，所选组件失败时停止发布。普通本地运行保留警告模式，失败组件会写入 `description.txt`。
 - 发布流程串行执行，构建源码固定为触发运行的提交，发布说明记录该提交 SHA。同日仍沿用日期标签并更新已有 Release。
 - `--only` 局部更新会保留 `description.txt` 中其他组件上次成功记录的版本；失败组件单独列出，版本清单不替代文件完整性检查。
+- Release 同时提供 `SwitchSD.zip`、`SwitchSD.zip.sha256` 和组件版本清单 `description.txt`。下载压缩包和校验文件后，可在 Linux 上执行 `sha256sum -c SwitchSD.zip.sha256`，或在 macOS 上执行 `shasum -a 256 -c SwitchSD.zip.sha256` 验证下载文件。
+- 旧版本清理只处理有效 `YYYYMMDD` 日期标签的正式 Release，保留最近 5 个，并保护当前发布；草稿、预发布和其他标签不参与删除。可运行 `python3 scripts/prune_releases.py --repo huangqian8/SwitchScript --keep 5` 预览，只有显式传入 `--execute` 才会删除 Release 和对应标签。
 - 离线回归检查：`python3 -m unittest discover -s tests -v`；脚本语法检查：`bash -n switchScript.sh`。
 
 ## 更新日志
+- 2026-11-19 替换旧版 Release 清理工具，增加清理预览与保护规则；发布压缩包校验文件和组件版本清单
 - 2026-11-19 完善构建触发、严格发布和失败报告；修复 API 缓存，增加请求超时重试、手动构建、发布并发控制与离线回归检查
 - 2026-11-15 移除两个自制系统启动项中的 `kip1patch=nosigchk`，避免启动时请求该外部补丁导致报错（#34）
 - 2026-06-20 模板化配置文件，优化 `--only` 模式，兼容 `Bash 3.2+` 并增加最终结构校验
