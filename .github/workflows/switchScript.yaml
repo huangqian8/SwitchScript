@@ -98,10 +98,28 @@ jobs:
           --protect-tag "$tag_name" \
           --execute
 
-    - name: Delete workflow runs for current repo
-      uses: Mattraks/delete-workflow-runs@v2.1.0
-      with:
-        token: ${{ secrets.actions_release }}
-        repository: ${{ github.repository }}
-        retain_days: 7
-        keep_minimum_runs: 6
+  cleanup:
+    needs: [validate, build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Prune workflow history
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          python3 scripts/prune_workflow_runs.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow switchScript.yaml \
+            --keep 5 \
+            --current-run-id "$GITHUB_RUN_ID" \
+            --current-result "$BUILD_RESULT" \
+            --execute

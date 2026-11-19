@@ -93,9 +93,12 @@
 - `--only` 局部更新会保留 `description.txt` 中其他组件上次成功记录的版本；失败组件单独列出，版本清单不替代文件完整性检查。
 - Release 同时提供 `SwitchSD.zip`、`SwitchSD.zip.sha256` 和组件版本清单 `description.txt`。下载压缩包和校验文件后，可在 Linux 上执行 `sha256sum -c SwitchSD.zip.sha256`，或在 macOS 上执行 `shasum -a 256 -c SwitchSD.zip.sha256` 验证下载文件。
 - 旧版本清理只处理有效 `YYYYMMDD` 日期标签的正式 Release，保留最近 5 个，并保护当前发布；草稿、预发布和其他标签不参与删除。可运行 `python3 scripts/prune_releases.py --repo huangqian8/SwitchScript --keep 5` 预览，只有显式传入 `--execute` 才会删除 Release 和对应标签。
+- Actions 历史保留最近 5 次成功构建；最新成功构建之后的失败记录保留供排查，后续构建成功后清理此前的失败记录。运行中和排队中的记录不删除。清理由独立 job 在验证、构建结束后执行，构建失败时也会运行。
+- 可运行 `python3 scripts/prune_workflow_runs.py --repo huangqian8/SwitchScript --workflow switchScript.yaml --keep 5` 预览历史清理；只有显式传入 `--execute` 才会删除运行记录及其日志。
 - 离线回归检查：`python3 -m unittest discover -s tests -v`；脚本语法检查：`bash -n switchScript.sh`。
 
 ## 更新日志
+- 2026-11-19 Actions 历史改为保留最近 5 次成功构建及尚未被后续成功构建解决的失败记录；独立执行清理并保护运行中记录
 - 2026-11-19 替换旧版 Release 清理工具，增加清理预览与保护规则；发布压缩包校验文件和组件版本清单
 - 2026-11-19 完善构建触发、严格发布和失败报告；修复 API 缓存，增加请求超时重试、手动构建、发布并发控制与离线回归检查
 - 2026-11-15 移除两个自制系统启动项中的 `kip1patch=nosigchk`，避免启动时请求该外部补丁导致报错（#34）
