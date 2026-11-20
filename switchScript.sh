@@ -1012,6 +1012,25 @@ generate_configs() {
     log_success "Configuration files generation"
 }
 
+enable_default_startup_modules() {
+    local -a modules=(
+        "420000000007E51A|nx-ovlloader (Ultrahand)"
+        "420000000000000B|sys-patch"
+    )
+    local module module_id name module_dir
+    for module in "${modules[@]}"; do
+        IFS='|' read -r module_id name <<< "$module"
+        module_dir="atmosphere/contents/$module_id"
+        if [ -s "$module_dir/exefs.nsp" ]; then
+            mkdir -p "$module_dir/flags"
+            touch "$module_dir/flags/boot2.flag"
+            log_info "Enabled startup: $name"
+        else
+            log_info "Startup skipped (module not installed): $name"
+        fi
+    done
+}
+
 finalize_setup() {
     log_info "Finalizing setup..."
     local removed_boot2_flags=0
@@ -1037,7 +1056,8 @@ finalize_setup() {
         find atmosphere/contents -type f -name "boot2.flag" -delete
     fi
     log_info "Removed ${removed_boot2_flags} boot2.flag file(s) from atmosphere/contents"
-    
+    enable_default_startup_modules
+
     log_success "Setup finalization"
 }
 

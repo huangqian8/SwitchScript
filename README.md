@@ -75,6 +75,8 @@ bash switchScript.sh --only configs
 
 包含核心启动组件、Payload、自制软件、系统模块和 Overlay 插件，详细清单及上游链接见下方。
 
+默认随系统启动 **Ultrahand 加载器（nx-ovlloader）** 和 **sys-patch**；Ultrahand 菜单仍需手动呼出，其他模块的自启动标记会在整理阶段移除。此规则在全量运行或包含 `finalize` 分组时应用，仅为已安装的模块创建启动标记。
+
 <details>
 <summary>展开组件清单与下载来源</summary>
 
@@ -199,6 +201,8 @@ shasum -a 256 -c SwitchSD.zip.sha256
 </details>
 
 ## 更新日志
+
+- 2026-11-20 默认启用 Ultrahand 加载器和 sys-patch 随系统启动，其他模块保持原有自启动策略
 
 - 2026-11-19 Actions 历史改为保留最近 5 次成功构建及尚未被后续成功构建解决的失败记录；独立执行清理并保护运行中记录
 - 2026-11-19 替换旧版 Release 清理工具，增加清理预览与保护规则；发布压缩包校验文件和组件版本清单

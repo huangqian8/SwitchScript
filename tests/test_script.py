@@ -116,6 +116,34 @@ main --only system --strict
         self.assertIn('- emuiibo', result.stdout)
         self.assertIn('- sys-patch', result.stdout)
 
+    def test_finalization_enables_only_installed_default_modules(self):
+        result = self.run_shell(r'''
+mkdir -p switch atmosphere/contents
+printf payload > payload.bin
+for module in 420000000007E51A 420000000000000B 00FF0000636C6BFF; do
+    mkdir -p "atmosphere/contents/$module/flags"
+    printf module > "atmosphere/contents/$module/exefs.nsp"
+    touch "atmosphere/contents/$module/flags/boot2.flag"
+done
+finalize_setup
+[ -f atmosphere/contents/420000000007E51A/flags/boot2.flag ]
+[ -f atmosphere/contents/420000000000000B/flags/boot2.flag ]
+[ ! -e atmosphere/contents/00FF0000636C6BFF/flags/boot2.flag ]
+finalize_setup
+[ "$(find atmosphere/contents -name boot2.flag | wc -l | tr -d ' ')" = 2 ]
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_startup_markers_are_not_created_for_missing_or_empty_modules(self):
+        result = self.run_shell(r'''
+mkdir -p atmosphere/contents/420000000000000B
+: > atmosphere/contents/420000000000000B/exefs.nsp
+enable_default_startup_modules
+[ ! -e atmosphere/contents/420000000007E51A ]
+[ ! -e atmosphere/contents/420000000000000B/flags/boot2.flag ]
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_dry_run_does_not_create_outputs(self):
         result = self.run_shell(r'''
 main --strict --dry-run --only core,configs,finalize
