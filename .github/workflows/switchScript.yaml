@@ -80,10 +80,13 @@ jobs:
         sha256sum -c SwitchSD.sha256
         {
           printf 'Source commit: %s\n\n' "$GITHUB_SHA"
-          printf 'ldn_mitm package\n'
-          cat description-ldn_mitm.txt
-          printf '\nRoomCircuit package (replaces ldn_mitm)\n'
-          cat description-roomcircuit.txt
+          printf 'Packages\n'
+          printf -- '- SwitchSD-ldn_mitm.zip: default ldn_mitm network stack\n'
+          printf -- '- SwitchSD-roomcircuit.zip: RoomCircuit replacement\n'
+          printf '\nBoth packages are mutually exclusive. Install only one.\n'
+          printf 'Verify downloads with SwitchSD.sha256.\n'
+          printf 'Component versions are listed in description-ldn_mitm.txt and description-roomcircuit.txt.\n'
+          printf '\nSee the README for installation and network stack selection.\n'
         } > release-notes.txt
 
     - name: Remove obsolete release assets
