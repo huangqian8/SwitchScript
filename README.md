@@ -45,6 +45,7 @@ bash switchScript.sh
 | --- | --- |
 | `--dry-run` | 只显示执行分组，不下载或写入文件 |
 | `--only <groups>` | 仅执行指定分组，保留已有 `SwitchSD` 内容 |
+| `--network-stack <name>` | 选择 `ldn_mitm`（默认）或 `roomcircuit` |
 | `--strict` | 任一所选组件准备失败时返回非零状态，自动发布默认启用 |
 | `--help` | 显示帮助 |
 
@@ -54,6 +55,9 @@ bash switchScript.sh --dry-run
 
 # 仅更新核心组件、配置并完成整理
 bash switchScript.sh --only core,configs,finalize
+
+# 使用 RoomCircuit 替代 ldn_mitm
+bash switchScript.sh --network-stack roomcircuit
 ```
 
 可选分组：`core`、`payload`、`homebrew`、`special`、`system`、`configs`、`finalize`。
@@ -176,7 +180,7 @@ bash switchScript.sh --only configs
 
 每天北京时间 **16:17** 请求自动构建，GitHub 调度可能延迟。也可在 Actions 页面使用 `Run workflow` 手动运行。
 
-Release 附件包含整合包 `SwitchSD.zip`、校验文件 `SwitchSD.zip.sha256` 和版本清单 `description.txt`。下载压缩包及校验文件后执行：
+每次 Release 同时提供 `SwitchSD-ldn_mitm.zip` 和 `SwitchSD-roomcircuit.zip` 两个整合包。前者使用默认的 `ldn_mitm`，后者使用 RoomCircuit 替换同一模块槽位。两个包不能同时安装。Release 还包含 `SwitchSD.sha256` 和对应的组件版本清单。下载压缩包及校验文件后执行：
 
 ```bash
 # Linux
@@ -202,6 +206,7 @@ shasum -a 256 -c SwitchSD.zip.sha256
 
 ## 更新日志
 
+- 2026-11-21 每次构建生成 `ldn_mitm` 和 RoomCircuit 两个互斥整合包，默认方案仍为 `ldn_mitm`
 - 2026-11-20 默认启用 Ultrahand 加载器和 sys-patch 随系统启动，其他模块保持原有自启动策略
 
 - 2026-11-19 Actions 历史改为保留最近 5 次成功构建及尚未被后续成功构建解决的失败记录；独立执行清理并保护运行中记录

@@ -67,14 +67,23 @@ jobs:
         echo "DATE=$(date "+%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "tag_name=$(date +%Y%m%d)" >> $GITHUB_ENV
         chmod +x $SCRIPT_SH
-        ./$SCRIPT_SH --strict
-        zip -rq SwitchSD.zip SwitchSD
-        zip -T SwitchSD.zip
-        sha256sum SwitchSD.zip > SwitchSD.zip.sha256
-        sha256sum -c SwitchSD.zip.sha256
+        ./$SCRIPT_SH --strict --network-stack ldn_mitm
+        zip -rq SwitchSD-ldn_mitm.zip SwitchSD
+        cp description.txt description-ldn_mitm.txt
+        rm -rf SwitchSD description.txt
+        ./$SCRIPT_SH --strict --network-stack roomcircuit
+        zip -rq SwitchSD-roomcircuit.zip SwitchSD
+        cp description.txt description-roomcircuit.txt
+        zip -T SwitchSD-ldn_mitm.zip
+        zip -T SwitchSD-roomcircuit.zip
+        sha256sum SwitchSD-ldn_mitm.zip SwitchSD-roomcircuit.zip > SwitchSD.sha256
+        sha256sum -c SwitchSD.sha256
         {
           printf 'Source commit: %s\n\n' "$GITHUB_SHA"
-          cat description.txt
+          printf 'ldn_mitm package\n'
+          cat description-ldn_mitm.txt
+          printf '\nRoomCircuit package (replaces ldn_mitm)\n'
+          cat description-roomcircuit.txt
         } > release-notes.txt
 
     - name: Create release
@@ -86,7 +95,7 @@ jobs:
         commit: ${{ github.sha }}
         token: ${{ secrets.actions_release }}
         bodyFile: release-notes.txt
-        artifacts: "SwitchSD.zip,SwitchSD.zip.sha256,description.txt"
+        artifacts: "SwitchSD-ldn_mitm.zip,SwitchSD-roomcircuit.zip,SwitchSD.sha256,description-ldn_mitm.txt,description-roomcircuit.txt"
 
     - name: Remove old Releases
       env:

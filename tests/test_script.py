@@ -144,6 +144,21 @@ enable_default_startup_modules
 ''')
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_network_stack_selects_roomcircuit_and_defaults_to_ldn_mitm(self):
+        result = self.run_shell(r'''
+main --dry-run --only system --network-stack roomcircuit
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Network stack: roomcircuit', result.stdout)
+        self.assertIn('system', result.stdout)
+
+    def test_invalid_network_stack_is_rejected(self):
+        result = self.run_shell(r'''
+main --dry-run --network-stack unknown
+''')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Unknown network stack', result.stderr)
+
     def test_dry_run_does_not_create_outputs(self):
         result = self.run_shell(r'''
 main --strict --dry-run --only core,configs,finalize

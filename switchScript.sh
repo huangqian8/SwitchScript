@@ -59,6 +59,7 @@ MAX_PARALLEL_DOWNLOADS="${MAX_PARALLEL_DOWNLOADS:-5}"
 DRY_RUN=0
 ONLY_MODE=0
 STRICT=0
+NETWORK_STACK="ldn_mitm"
 
 array_name_contains() {
     local needle="$1"
@@ -218,6 +219,7 @@ print_usage() {
 Usage: switchScript.sh [options]
 
 Options:
+  --network-stack <name>   Select ldn_mitm (default) or roomcircuit
   --strict                 Fail if any selected component cannot be prepared
   --dry-run                Print selected plan and exit (no download/write)
   --only <groups>          Run only selected groups (comma-separated)
@@ -239,6 +241,14 @@ parse_args() {
     local -a _groups=()
     while [ "$#" -gt 0 ]; do
         case "$1" in
+            --network-stack)
+                shift
+                [ "$#" -gt 0 ] || { echo "Missing value for --network-stack" >&2; print_usage; exit 1; }
+                case "$1" in
+                    ldn_mitm|roomcircuit) NETWORK_STACK="$1" ;;
+                    *) echo "Unknown network stack: $1" >&2; print_usage; exit 1 ;;
+                esac
+                ;;
             --strict)
                 STRICT=1
                 ;;
@@ -603,6 +613,7 @@ main() {
     validate_runtime_options
 
     if [ "$DRY_RUN" -eq 1 ]; then
+        log_info "Network stack: $NETWORK_STACK"
         log_info "Dry-run mode enabled. No download or filesystem changes will be made."
         if [ "$ONLY_MODE" -eq 0 ]; then
             log_info "Selected groups: all"
@@ -890,6 +901,9 @@ main() {
         local system_idx=0
         for repo_info in "${system_modules[@]}"; do
             IFS='|' read -r repo_pattern pattern name <<< "$repo_info"
+            if [ "$NETWORK_STACK" = "roomcircuit" ] && [ "$name" = "ldn_mitm" ]; then
+                continue
+            fi
             local url tag key
             IFS='|' read -r url tag < <(get_latest_release_asset "$repo_pattern" "$pattern") || true
             if [ -z "$url" ]; then
@@ -918,6 +932,20 @@ main() {
             fi
         done
         
+        if [ "$NETWORK_STACK" = "roomcircuit" ]; then
+            local roomcircuit_url roomcircuit_tag
+            IFS='|' read -r roomcircuit_url roomcircuit_tag < <(get_latest_release_asset "SEc-123/Roomcircuit_lanywhere-selfhost" "switch-online-integration\.zip") || true
+            if [ -n "$roomcircuit_url" ] && download_file "$roomcircuit_url" "roomcircuit.zip" "RoomCircuit"; then
+                if extract_and_cleanup "roomcircuit.zip" "RoomCircuit"; then
+                    record_item "RoomCircuit (replaces ldn_mitm)" "$roomcircuit_tag"
+                else
+                    record_failure "RoomCircuit"
+                fi
+            else
+                record_failure "RoomCircuit"
+            fi
+        fi
+
         # Emuiibo (special handling)
         local emuiibo_url emuiibo_tag
         IFS='|' read -r emuiibo_url emuiibo_tag < <(get_latest_release_asset "XorTroll/emuiibo" "emuiibo\\.zip") || true
