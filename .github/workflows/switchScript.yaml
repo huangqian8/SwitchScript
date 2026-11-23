@@ -86,6 +86,14 @@ jobs:
           cat description-roomcircuit.txt
         } > release-notes.txt
 
+    - name: Remove obsolete release assets
+      env:
+        GH_TOKEN: ${{ secrets.actions_release }}
+      run: |
+        for asset in SwitchSD.zip SwitchSD.zip.sha256 description.txt; do
+          gh release delete-asset "$tag_name" "$asset" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+        done
+
     - name: Create release
       uses: ncipollo/release-action@v1
       with:
